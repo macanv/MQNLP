@@ -125,7 +125,7 @@ if __name__ == '__main__':
     resource_path = os.path.join(local_path, 'resources')
     # file_path = os.path.join(resource_path, 'thu_data_3class_3k.pkl')
     #
-    file_path = os.path.join('/Users/macan/desktop', 'thu_data_3class_3k')
+    file_path = os.path.join('/Users/macan/Downloads', 'thu_data_3class_3k')
 
     input_x, input_y, word_index = load_data_from_file(file_path, num_words=10000, maxlen=400)
     print(os.path.join(resource_path, 'thu_data_3class_3k.pkl'))
