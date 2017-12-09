@@ -3,7 +3,8 @@ import os
 import re
 import numpy as np
 import codecs
-from tensorflow.contrib import learn
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing import sequence
 from sklearn.utils import shuffle
 import pickle
 import collections
@@ -46,23 +47,28 @@ def load_data_from_file(file_path, num_words, skip_top=0, maxlen=None, minlen=0,
             except ValueError:
                 print(line)
                 continue
-            y_[i] = 1
-            input_y.append(y_)
 
-            # for maxlen and encode text to index
+            input_y.append(i)
+
             input_x.append(line[index + 1:])
+
+        # build index matrix replace words matrix
+        tokenizer = Tokenizer(num_words=num_words)
+        tokenizer.fit_on_texts(input_x)
+        sequences = np.array(tokenizer.texts_to_sequences(input_x))
+
+        # for maxlen and encode text to index less using padding
         max_len = max([len(x) for x in input_x])
         if maxlen is None:
             maxlen = max_len
         maxlen = min(max_len, maxlen)
-        vocab_process = learn.preprocessing.VocabularyProcessor(max_document_length=maxlen, min_frequency=minlen)
-        input_x = np.array(list(vocab_process.fit_transform(input_x)))
+        sequences = sequence.pad_sequences(sequences, maxlen=maxlen)
 
-        return [input_x, input_y]
+        return sequences, np.array(input_y), tokenizer.word_index
     else:
         raise IOError('file not exits in this path')
 
-def load_data(file_path):
+def load_data(file_path=None):
     """
     load data from picker
     :param file_path: 
@@ -72,10 +78,13 @@ def load_data(file_path):
     :param seed: 
     :return: 
     """
-    import pickle
+    if file_path is None:
+        print('use default file THU data of 3 categories and each class have 3k samples')
+        resource_path = os.path.join(local_path, 'resources')
+        file_path = os.path.join(resource_path, 'thu_data_3class_3k.pkl')
     with open(file_path, 'rb') as fd:
-        data = pickle.load(fd)
-    return data
+        input_x, input_y, words_index = pickle.load(fd)
+    return input_x, input_y, words_index
 
 
 def build_datasets(words, max_fequence=10000):
@@ -102,22 +111,28 @@ def build_datasets(words, max_fequence=10000):
 
     return data, count, dictionary, reverse_dictionary
 
-def word_to_id(texts, max_feq, min_feq):
+def tokenizer(texts, max_feq, min_feq):
     """
-    
+    自己实现id-word, word-id 
     :param texts: 
     :param max_feq: 
     :param min_feq: 
     :return: 
     """
+    pass
 
 if __name__ == '__main__':
     resource_path = os.path.join(local_path, 'resources')
-    file_path = os.path.join(resource_path, 'thu_data_3class_1w')
+    # file_path = os.path.join(resource_path, 'thu_data_3class_3k.pkl')
+    #
+    file_path = os.path.join('/Users/macan/desktop', 'thu_data_3class_3k')
 
-    input_x, input_y = load_data_from_file(file_path, num_words=10000, maxlen=400)
-    with open(os.path.join(resource_path, 'thu_data_3class_1w.pkl'), 'wb') as fd:
-        pickle.dump([input_x, input_y], fd)
+    input_x, input_y, word_index = load_data_from_file(file_path, num_words=10000, maxlen=400)
+    print(os.path.join(resource_path, 'thu_data_3class_3k.pkl'))
+    with open(os.path.join(resource_path, 'thu_data_3class_3k.pkl'), 'wb+') as fd:
+        pickle.dump([input_x, input_y, word_index], fd)
+#     input_x, input_y, words_index = load_data(file_path)
+#     print(len(input_x[0]))
 
 
 
