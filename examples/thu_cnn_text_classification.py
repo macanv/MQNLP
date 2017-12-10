@@ -16,5 +16,5 @@ if __name__ == '__main__':
 
     y_train = keras.utils.to_categorical(y_train, num_classes=3)
     y_test = keras.utils.to_categorical(y_test, num_classes=3)
-    clf = TextCNN(num_category=3, maxlen=maxlen)
+    clf = TextCNN(num_category=3, maxlen=maxlen, epochs=20)
     clf.train(x_train, y_train, x_test, y_test)
