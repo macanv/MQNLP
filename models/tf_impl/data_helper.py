@@ -9,7 +9,7 @@ from keras.preprocessing import sequence
 from keras.preprocessing.text import Tokenizer
 import keras
 
-category = []
+category = ['体育', '股票', '科技']
 
 def data_clear(sentence):
     """
@@ -44,13 +44,15 @@ def load_and_split_data_label(file_path):
         index = doc.find(' ')
         tag = doc[:index]
         tag = re.sub('__label__', '', tag)
-
-        i = category.index(tag)
+        try:
+            i = category.index(tag)
+        except ValueError:
+            continue
         input_y.append(i)
 
         input_x.append(data_clear(doc[index + 1:]))
 
-    return [input_x, input_y]
+    return input_x, input_y
 
 def pad_sequence(input_x, num_words, maxlen):
     """
@@ -70,6 +72,13 @@ def pad_sequence(input_x, num_words, maxlen):
     maxlen = min(max_len, maxlen)
     sequences = sequence.pad_sequences(sequences, maxlen=maxlen)
     return sequence, tokenizer.word_index
+
+def load_data(file_path, num_words, maxlen):
+    input_x, input_y = load_and_split_data_label(file_path)
+    input_x, words_index = pad_sequence(input_x, num_words, maxlen)
+
+    input_y = label_ont_hot(input_y)
+    return input_x, words_index, input_y
 
 def label_ont_hot(input_y):
     """

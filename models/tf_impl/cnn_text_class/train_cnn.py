@@ -1,13 +1,17 @@
 # encoding=utf-8
 
 import tensorflow as tf
+from models.tf_impl.data_helper import load_data
+from sklearn.cross_validation import train_test_split
 # Parameters
 # ==================================================
 
 # Data loading params
 tf.flags.DEFINE_float("dev_sample_percentage", .1, "Percentage of the training data to use for validation")
-tf.flags.DEFINE_string("file_path", "thu_data_3class_3k", "Data source.")
+tf.flags.DEFINE_string("file_path", "C:\workspace\python\MQNLP\resources\thu_data_3class_3k", "Data source.")
 tf.flags.DEFINE_integer("num_classes", 3, "number classes of datasets.")
+tf.flags.DEFINE_integer("num_words", 20000, "num of words are kept")
+tf.flags.DEFINE_integer("maxlen", 500, "max length of sentence")
 
 # Model Hyperparameters
 tf.flags.DEFINE_integer("embedding_dim", 200, "Dimensionality of character embedding (default: 128)")
@@ -32,3 +36,9 @@ print('\nParameters')
 for attr, value in sorted(FLAGS.__flags.items()):
     print("{}={}".format(attr.upper(), value))
 print("")
+
+input_x, words_index, input_y = load_data(FLAGS.file_path, FLAGS.num_words, FLAGS.maxlen)
+x_train, x_test, y_train, y_test = train_test_split(input_x, input_y, train_size=0.9)
+
+print("Vocabulary Size: {:d}".format(len(words_index)))
+print("Train/Dev split: {:d}/{:d}".format(len(y_train), len(y_test)))
