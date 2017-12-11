@@ -7,8 +7,18 @@ import os
 from sklearn.utils import shuffle
 from keras.preprocessing import sequence
 from keras.preprocessing.text import Tokenizer
+import keras
 
 category = []
+
+def data_clear(sentence):
+    """
+    数据处理，将不需要的符号等去掉
+    :param sentence: 
+    :return: 
+    """
+    sentence = re.sub('[a-zA-Z0-9\'\",.:/\\，。”’]+', '_', sentence)
+    return sentence
 
 def load_and_split_data_label(file_path):
     """
@@ -38,7 +48,7 @@ def load_and_split_data_label(file_path):
         i = category.index(tag)
         input_y.append(i)
 
-        input_x.append(doc[index + 1:])
+        input_x.append(data_clear(doc[index + 1:]))
 
     return [input_x, input_y]
 
@@ -50,6 +60,7 @@ def pad_sequence(input_x, num_words, maxlen):
     """
     tokenizer = Tokenizer(num_words=num_words)
     tokenizer.fit_on_texts(input_x)
+    # 将原始的词语转化为index形式
     sequences = np.array(tokenizer.texts_to_sequences(input_x))
 
     # for maxlen and encode text to index less using padding
@@ -59,6 +70,23 @@ def pad_sequence(input_x, num_words, maxlen):
     maxlen = min(max_len, maxlen)
     sequences = sequence.pad_sequences(sequences, maxlen=maxlen)
     return sequence, tokenizer.word_index
+
+def label_ont_hot(input_y):
+    """
+    将标签标示为one-hot 编码
+    :param input_y: 
+    :return: 
+    """
+    label_ = dict()
+    for y in input_y:
+        label_[y] = len(label_)
+    num_class = len(label_)
+    one_hot_y = []
+    for y in input_y:
+        y_ = np.zeros(num_class)
+        y_[label_[y]] = 1
+        one_hot_y.append(y_)
+    return np.array(one_hot_y)
 
 def batch_iter(data, batch_size, num_epochs, shuffle=True):
     """
