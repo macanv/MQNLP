@@ -34,48 +34,47 @@ class TextRNN(object):
         self.epoch_increment = tf.assign(self.epoch_step, tf.add(self.epoch_step, tf.constant(1)))
 
         # graph
-        self.embedding_layer()
-        self.logits = self.inference()
-        if not is_training:
-            return
-        self.loss_val = self.loss()
-        self.train_op = self.train()
-        self.acc()
+        # self.embedding_layer()
+        # self.logits = self.inference()
+        # if not is_training:
+        #     return
+        # self.loss_val = self.loss()
+        # self.train_op = self.train()
+        # self.acc()
+        self.network()
 
-    def __lstm(self):
-        self.cell = self.cell.lower()
-        if self.cell == 'lstm':
-            return rnn.BasicLSTMCell(self.hidden_size)
-        elif self.cell == 'gru':
-            return rnn.GRUCell(self.hidden_size)
-        elif self.cell == 'bi-lstm':
-            cell_fw = rnn.BasicLSTMCell(self.hidden_size)
-            cell_bw = rnn.BasicLSTMCell(self.hidden_size)
-            return cell_bw, cell_fw
-        elif self.cell == 'bi-gru':
-            cell_fw = rnn.GRUCell(self.hidden_size)
-            cell_bw = rnn.GRUCell(self.hidden_size)
-            return cell_bw, cell_fw
-
-    def __dropout(self):
-        if self.dropout_keep_prob is not None:
-            pass
 
     def build_rnn(self):
-        if self.cell.startswith('bi'):
-            if self.cell.__eq__('bi-lstm'):
+        """
+        lstm layer,根据输入参数，进行不同rnn cell 以及层数的调整
+        :return: 
+        """
+        with tf.name_scope('rnn'):
+            if self.cell.startswith('bi'):
                 cell_fw = rnn.BasicLSTMCell(self.hidden_size)
                 cell_bw = rnn.BasicLSTMCell(self.hidden_size)
+                if self.cell == 'bi-gru':
+                    cell_fw = rnn.GRUCell(self.hidden_size)
+                    cell_bw = rnn.GRUCell(self.hidden_size)
                 if self.dropout_keep_prob is not None:
                     cell_fw = rnn.DropoutWrapper(cell_fw, output_keep_prob=self.dropout_keep_prob)
                     cell_bw = rnn.DropoutWrapper(cell_bw, output_keep_prob=self.dropout_keep_prob)
-                outputs, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw, cell_bw, self.embedding_chars, self.sequence_length, dtype=tf.float32)
-                # todo: 使用多种rnn的情况
+                self.outputs, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw, cell_bw, self.embedding_chars,
+                                                             dtype=tf.float32)
+            else:
+                if self.cell == 'lstm':
+                    cell_bw = rnn.BasicLSTMCell(self.hidden_size)
+                else:
+                    cell_bw = rnn.GRUCell(self.hidden_size)
+                if self.dropout_keep_prob is not None:
+                    cell_bw = rnn.DropoutWrapper(cell_bw)
+                self.outputs, _ = tf.nn.dynamic_rnn(cell_bw, self.embedding_chars,
+                                                    self.sequence_length, dtype=tf.float32)
 
-    def embedding_layer(self):
+    def network(self):
         """
-
-        :return:
+        RNN 进行文本分类的网络搭建
+        :return: 
         """
         # 1. embedding layer
         with tf.name_scope('embedding'):
@@ -84,47 +83,58 @@ class TextRNN(object):
             # 因为不是CNN 所以不需要拓展一维
             # self.embedding_chars_expend = tf.expand_dims(self.embedding_chars, -1)
 
-    def inference(self):
-        """
-        bi-LSTM,concat, FC layer, softmax output
-        :return:
-        """
-        # 2. Bi-LSTM layer
-        with tf.name_scope('bi-lstm'):
-            # forward direction cell
-            lstm_fw_cell = rnn.BasicLSTMCell(self.hidden_size)
-            # backward direction cell
-            lstm_bw_cell = rnn.BasicLSTMCell(self.hidden_size)
-            if self.dropout_keep_prob is not None:
-                lstm_bw_cell = rnn.DropoutWrapper(lstm_bw_cell, output_keep_prob=self.dropout_keep_prob)
-                lstm_fw_cell = rnn.DropoutWrapper(lstm_fw_cell, output_keep_prob=self.dropout_keep_prob)
-            # 双向动态RNN
-            outputs, _ = tf.nn.bidirectional_dynamic_rnn(lstm_fw_cell, lstm_bw_cell, self.embedding_chars, dtype=tf.float32)
-            print(outputs)
+        # 2. rnn layer
+        with tf.name_scope('rnn'):
+            if self.cell.startswith('bi'):
+                cell_fw = rnn.BasicLSTMCell(self.hidden_size)
+                cell_bw = rnn.BasicLSTMCell(self.hidden_size)
+                if self.cell == 'bi-gru':
+                    cell_fw = rnn.GRUCell(self.hidden_size)
+                    cell_bw = rnn.GRUCell(self.hidden_size)
+                if self.dropout_keep_prob is not None:
+                    cell_fw = rnn.DropoutWrapper(cell_fw, output_keep_prob=self.dropout_keep_prob)
+                    cell_bw = rnn.DropoutWrapper(cell_bw, output_keep_prob=self.dropout_keep_prob)
+                self.outputs, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw, cell_bw, self.embedding_chars,
+                                                                  dtype=tf.float32)
+            else:
+                if self.cell == 'lstm':
+                    cell_bw = rnn.BasicLSTMCell(self.hidden_size)
+                else:
+                    cell_bw = rnn.GRUCell(self.hidden_size)
+                if self.dropout_keep_prob is not None:
+                    cell_bw = rnn.DropoutWrapper(cell_bw)
+                self.outputs, _ = tf.nn.dynamic_rnn(cell_bw, self.embedding_chars,
+                                                    self.sequence_length, dtype=tf.float32)
 
+        # 3. concat layer
         with tf.name_scope('concat'):
-            output_rnn = tf.concat(outputs, axis=2) #[batch_size, sequence_length, hidden_size * 2]
+            output_rnn = tf.concat(self.outputs, axis=2) #[batch_size, sequence_length, hidden_size * 2]
             self.output_rnn_last = tf.reduce_mean(output_rnn, axis=1) #[batch_size, hideen_size * 2]
             print('output_rnn_last', self.output_rnn_last)
 
         with tf.name_scope('output'):
             self.W = tf.Variable(tf.random_uniform([self.hidden_size * 2, self.num_calsses], -1, 1))
             self.b = tf.Variable(tf.constant(0.1, shape=[self.num_calsses]))
+            # output result
+            self.logits = tf.matmul(self.output_rnn_last, self.W) + self.b
 
-            logits = tf.matmul(self.output_rnn_last, self.W) + self.b
-        return logits
-
-    def loss(self):
-        """
-        
-        :return: 
-        """
-        with tf.name_scope('loss'):
+        with tf.name_scope('optimizer'):
             losses = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.input_y, logits=self.logits)
-            loss = tf.reduce_mean(losses)
+            self.loss = tf.reduce_mean(losses)
+            # 计算l2正则项损失
             l2_loss = tf.add_n([tf.nn.l2_loss(v) for v in tf.trainable_variables() if 'bias' not in v.name]) * self.l2_lambda_reg
-            loss += l2_loss
-        return loss
+            # 总损失
+            self.loss += l2_loss
+
+            # 优化
+            learning_rate = tf.train.exponential_decay(self.learning_rate, self.global_step, self.decay_steps,self.decay_rate, staircase=True)
+            self.train_op = tf.contrib.layers.optimize_loss(self.loss, global_step=self.global_step,learning_rate=learning_rate, optimizer="Adam")
+
+        with tf.name_scope('accuracy'):
+            self.predictions = tf.argmax(self.logits, axis=1, name='predictions')
+            correct = tf.equal(tf.cast(self.predictions, tf.int32), self.input_y)
+            self.accuracy = tf.reduce_mean(tf.cast(correct, tf.float32), name='accuracy')
+
 
     def loss_nce(self):
         """
@@ -143,24 +153,6 @@ class TextRNN(object):
         l2_loss = tf.add_n([tf.nn.l2_loss(v) for v in tf.trainable_variables() if 'bias' not in v.name]) * self.l2_lambda_reg
         loss += l2_loss
         return loss
-
-    def train(self):
-        """
-
-        :return:
-        """
-        learning_rate = tf.train.exponential_decay(self.learning_rate, self.global_step, self.decay_steps,self.decay_rate, staircase=True)
-        train_op = tf.contrib.layers.optimize_loss(self.loss_val, global_step=self.global_step,learning_rate=learning_rate, optimizer="Adam")
-        return train_op
-
-    def acc(self):
-        """
-        
-        :return: 
-        """
-        self.predictions = tf.argmax(self.logits, axis=1, name='predictions')
-        correct = tf.equal(tf.cast(self.predictions, tf.int32), self.input_y)
-        self.accuracy = tf.reduce_mean(tf.cast(correct, tf.float32), name='accuracy')
 
 #test started
 def test():
@@ -183,6 +175,6 @@ def test():
         for i in range(100):
             input_x=np.zeros((batch_size,sequence_length)) #[None, self.sequence_length]
             input_y=input_y=np.array([1,0,1,1,1,2,1,1]) #np.zeros((batch_size),dtype=np.int32) #[None, self.sequence_length]
-            loss,acc,predict,_=sess.run([textRNN.loss_val,textRNN.accuracy,textRNN.predictions,textRNN.train_op],feed_dict={textRNN.input_x:input_x,textRNN.input_y:input_y,textRNN.dropout_keep_prob:dropout_keep_prob})
+            loss,acc,predict,_=sess.run([textRNN.loss,textRNN.accuracy,textRNN.predictions,textRNN.train_op],feed_dict={textRNN.input_x:input_x,textRNN.input_y:input_y,textRNN.dropout_keep_prob:dropout_keep_prob})
             print("loss:",loss,"acc:",acc,"label:",input_y,"prediction:",predict)
 test()

@@ -1,6 +1,64 @@
 # encoding=utf-8
 
 import numpy as np
+import codecs
+import re
+import os
+from sklearn.utils import shuffle
+from keras.preprocessing import sequence
+from keras.preprocessing.text import Tokenizer
+
+category = []
+
+def load_and_split_data_label(file_path):
+    """
+    将数据划分为训练数据和样本标签
+    :param corpus: 
+    :return: 
+    """
+    input_x = []
+    input_y = []
+
+    tag = []
+    if os.path.isfile(file_path):
+        with codecs.open(file_path, 'r') as f:
+            for line in f:
+                tag.append(re.sub('[\xa0\n\r\t]+', '', line))
+
+    else:
+        for docs in file_path:
+            for doc in docs:
+                tag.append(doc)
+    tag = shuffle(tag)
+    for doc in tag:
+        index = doc.find(' ')
+        tag = doc[:index]
+        tag = re.sub('__label__', '', tag)
+
+        i = category.index(tag)
+        input_y.append(i)
+
+        input_x.append(doc[index + 1:])
+
+    return [input_x, input_y]
+
+def pad_sequence(input_x, num_words, maxlen):
+    """
+    对数据进行padding,短的进行填充，长的进行截取
+    :param input_x: 
+    :return: 
+    """
+    tokenizer = Tokenizer(num_words=num_words)
+    tokenizer.fit_on_texts(input_x)
+    sequences = np.array(tokenizer.texts_to_sequences(input_x))
+
+    # for maxlen and encode text to index less using padding
+    max_len = max([len(x.split(' ')) for x in input_x])
+    if maxlen is None:
+        maxlen = max_len
+    maxlen = min(max_len, maxlen)
+    sequences = sequence.pad_sequences(sequences, maxlen=maxlen)
+    return sequence, tokenizer.word_index
 
 def batch_iter(data, batch_size, num_epochs, shuffle=True):
     """

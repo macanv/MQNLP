@@ -58,7 +58,7 @@ def load_data_from_file(file_path, num_words, skip_top=0, maxlen=None, minlen=0,
         sequences = np.array(tokenizer.texts_to_sequences(input_x))
 
         # for maxlen and encode text to index less using padding
-        max_len = max([len(x) for x in input_x])
+        max_len = max([len(x.split(' ')) for x in input_x])
         if maxlen is None:
             maxlen = max_len
         maxlen = min(max_len, maxlen)
