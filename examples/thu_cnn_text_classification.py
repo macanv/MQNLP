@@ -1,6 +1,4 @@
 import keras
-import numpy as np
-from keras.preprocessing import sequence
 from models.keras_impl.text_classification import TextCNN
 from utils import thu
 from sklearn.cross_validation import train_test_split
