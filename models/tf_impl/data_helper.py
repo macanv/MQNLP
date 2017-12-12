@@ -5,9 +5,10 @@ import codecs
 import re
 import os
 from sklearn.utils import shuffle
-from keras.preprocessing import sequence
-from keras.preprocessing.text import Tokenizer
-import keras
+from tensorflow.contrib import learn
+# from keras.preprocessing import sequence
+# from keras.preprocessing.text import Tokenizer
+# import keras
 
 category = ['体育', '股票', '科技']
 
@@ -58,44 +59,80 @@ def pad_sequence(input_x, num_words, maxlen):
     """
     对数据进行padding,短的进行填充，长的进行截取
     :param input_x: 
-    :return: 
+    :return: 转化为index的语料库以及word:id的矩阵
     """
-    tokenizer = Tokenizer(num_words=num_words)
-    tokenizer.fit_on_texts(input_x)
-    # 将原始的词语转化为index形式
-    sequences = np.array(tokenizer.texts_to_sequences(input_x))
 
-    # for maxlen and encode text to index less using padding
+    #  keras method for corpus preprocess...
+    # tokenizer = Tokenizer(num_words=num_words)
+    # tokenizer.fit_on_texts(input_x)
+    # # 将原始的词语转化为index形式
+    # sequences = np.array(tokenizer.texts_to_sequences(input_x))
+    #
+    # # for maxlen and encode text to index less using padding
+    # max_len = max([len(x.split(' ')) for x in input_x])
+    # if maxlen is None:
+    #     maxlen = max_len
+    # maxlen = min(max_len, maxlen)
+    # sequences = sequence.pad_sequences(sequences, maxlen=maxlen)
+    # return sequence, tokenizer.word_index
+
+    # tf method
+
     max_len = max([len(x.split(' ')) for x in input_x])
     if maxlen is None:
         maxlen = max_len
     maxlen = min(max_len, maxlen)
-    sequences = sequence.pad_sequences(sequences, maxlen=maxlen)
-    return sequence, tokenizer.word_index
+    vocab_process = learn.preprocessing.VocabularyProcessor(max_document_length=maxlen)
+    input_x = vocab_process.fit_transform(input_x)
+    return input_x, vocab_process.vocabulary_._mapping
+
 
 def load_data(file_path, num_words, maxlen):
+    """
+    加载数据
+    :param file_path: 
+    :param num_words: 
+    :param maxlen: 
+    :return: index and padding and numpy input_x, one-hot input_y, word-index mapping 
+    """
     input_x, input_y = load_and_split_data_label(file_path)
     input_x, words_index = pad_sequence(input_x, num_words, maxlen)
 
-    input_y = label_ont_hot(input_y)
-    return input_x, words_index, input_y
+    label_ = set()
+    nb_class = len([label_.add(y) for y in input_y])
+    input_y = label_one_hot(input_y, nb_class)
+    return input_x, input_y, words_index
 
-def label_ont_hot(input_y):
+# def label_ont_hot(input_y):
+#     """
+#     将标签标示为one-hot 编码
+#     :param input_y:
+#     :return:
+#     """
+#     label_ = dict()
+#     for y in input_y:
+#         label_[y] = len(label_)
+#     num_class = len(label_)
+#     one_hot_y = []
+#     for y in input_y:
+#         y_ = np.zeros(num_class)
+#         y_[label_[y]] = 1
+#         one_hot_y.append(y_)
+#     return np.array(one_hot_y)
+
+def label_one_hot(targets, nb_classes):
     """
-    将标签标示为one-hot 编码
-    :param input_y: 
+    标签进行one-hot 处理
+    :param targets: 一维的类别列表,类别标签从0开始
+    :param nb_classes: 
     :return: 
     """
-    label_ = dict()
-    for y in input_y:
-        label_[y] = len(label_)
-    num_class = len(label_)
-    one_hot_y = []
-    for y in input_y:
-        y_ = np.zeros(num_class)
-        y_[label_[y]] = 1
-        one_hot_y.append(y_)
-    return np.array(one_hot_y)
+    return np.eye(nb_classes)[np.array(targets).reshape(-1)]
+
+# if __name__ == '__main__':
+#     tag = [1, 2, 0]
+#     ont_hot = label_one_hot(targets=tag, nb_classes=3)
+#     print(ont_hot)
 
 def batch_iter(data, batch_size, num_epochs, shuffle=True):
     """
