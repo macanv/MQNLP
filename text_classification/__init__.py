@@ -2,7 +2,7 @@ import tensorflow as tf
 from tensorflow.contrib import rnn
 import numba as np
 
-class RNN(object):
+class RNNs(object):
 
     def __init__(self, embedding_mat, embedding_dims, vocab_size, non_static,
                  hidden_unit, sequence_length, num_classes, cell='lstm',
@@ -114,7 +114,7 @@ with tf.Graph().as_default():
     sess = tf.Session(config=session_conf)
     with sess.as_default():
         # 构建rnn 节点
-        rnn = RNN(
+        rnns = RNN(
             embedding_mat=None,
             embedding_dims=FLAGS.embedding_dim,
             vocab_size=len(word_index),
