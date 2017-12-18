@@ -3,7 +3,7 @@ import tensorflow as tf
 import numba as np
 
 class RCNN(object):
-    def __init__(self, sentence_length, num_classes, vocab_size, embedding_dims, activation, using_conv, l2_reg_lambda):
+    def __init__(self, sentence_length, num_classes, vocab_size, embedding_dims, activation, using_conv, batch_size, l2_reg_lambda):
         """
 
         :param sentence_length:
@@ -24,6 +24,7 @@ class RCNN(object):
         elif activation == 'relu':
             self.activation = tf.nn.relu
         self.using_conv = using_conv
+        self.batch_size = batch_size
 
         self.input_x = tf.placeholder(tf.int32, [None, self.sentence_length], name='input_x')
         self.input_y = tf.placeholder(tf.int32, [None, self.num_classes], name='input_y')
@@ -39,11 +40,9 @@ class RCNN(object):
         :param embedding_previous:
         :return:
         """
-        self.W_l = tf.get_variable('W_l', shape=[self.embedding_dims, self.embedding_dims], initializer=tf.random_normal_initializer)
-        self.W_sl = tf.get_variable('W_sl', shape=[self.embedding_dims, self.embedding_dims], initializer=tf.random_normal_initializer)
-
-        c_l = tf.matmul(word_left, self.W_l) + tf.matmul(embedding_previous, self.W_sl)
-        return self.activation(c_l)
+        c_l = tf.matmul(word_left, self.W_l);
+        c_l += tf.matmul(embedding_previous, self.W_sl)
+        return self.activation(tf.nn.bias_add(c_l, self.bias))
 
     def conv_right(self, word_right, embedding_afterward):
         """
@@ -52,13 +51,9 @@ class RCNN(object):
         :param embedding_afterward:
         :return:
         """
-        self.W_r = tf.get_variable('W_r', shape=[self.embedding_dims, self.embedding_dims],
-                                   initializer=tf.random_normal_initializer)
-        self.W_sr = tf.get_variable('W_sr', shape=[self.embedding_dims, self.embedding_dims],
-                                    initializer=tf.random_normal_initializer)
-
-        c_r = tf.matmul(word_right, self.W_r) + tf.matmul(embedding_afterward, self.W_sr)
-        return self.activation(c_r)
+        c_r = tf.matmul(word_right, self.W_r)
+        c_r += tf.matmul(embedding_afterward, self.W_sr)
+        return self.activation(tf.nn.bias_add(c_r, self.bias))
 
 
     def network(self):
@@ -74,23 +69,35 @@ class RCNN(object):
             self.embedding_chars = tf.nn.embedding_lookup(self.Embedding,
                                                           self.input_x) #[None, self.seq_length, embedding_dim]
 
+        self.W_r = tf.get_variable('W_r', shape=[self.embedding_dims, self.embedding_dims],
+                                   initializer=tf.random_normal_initializer)
+        self.W_sr = tf.get_variable('W_sr', shape=[self.embedding_dims, self.embedding_dims],
+                                    initializer=tf.random_normal_initializer)
+        self.W_l = tf.get_variable('W_l', shape=[self.embedding_dims, self.embedding_dims],
+                                   initializer=tf.random_normal_initializer)
+        self.W_sl = tf.get_variable('W_sl', shape=[self.embedding_dims, self.embedding_dims],
+                                   initializer=tf.random_normal_initializer)
+        self.bias = tf.get_variable('bias', shape=[self.embedding_dims])
 
         # 2. split sentence
         with tf.name_scope('split-sentence'):
             # conv left context
             embedding_chars_split = tf.split(self.embedding_chars, self.sentence_length, axis=1) #self.sentence_length * [None, 1, self.embedding_dim]
             embedding_chars_squeezed = [tf.squeeze(x, axis=1) for x in embedding_chars_split] #self.sentence_length * [None, self.embedding_dims]
+
             embedding_previous = tf.get_variable('mebedding_previous',
-                                                 shape=[None, self.embedding_dims],
+                                                 shape=[self.batch_size, self.embedding_dims],
                                                  dtype=tf.float32)
             # 随机初始化开始的单词信息
-            context_left_previous = tf.get_variable('context_left_previous',
-                shape=[None, self.embedding_dims],
-                dtype=tf.float32)
+            # context_left_previous = tf.get_variable('context_left_previous',
+            #                                         shape=[self.batch_size, self.embedding_dims],
+            #                                         dtype=tf.float32)
+            context_left_previous = tf.zeros((self.batch_size, self.embedding_dims))
 
             context_left_list = []
             for i, current_word in enumerate(embedding_chars_squeezed):
-                context_left = self.conv_left(context_left_previous, embedding_previous)
+                print(embedding_previous.get_shape())
+                context_left = self.conv_left(embedding_previous, context_left_previous)
                 #将w_i的左边的上下文信息保存
                 context_left_list.append(context_left)
                 embedding_previous = current_word
@@ -101,14 +108,16 @@ class RCNN(object):
             # reverse sentence
             embedding_chars_squeezed2 = embedding_chars_squeezed.copy()
             embedding_chars_squeezed2.reverse()
-            embedding_last = tf.get_variable('embedding_last',[None, self.embedding_dims],
+            embedding_last = tf.get_variable('embedding_last',[self.batch_size, self.embedding_dims],
                                              initializer=tf.random_normal_initializer),
-            context_right_last = tf.get_variable('context_right_last',
-                                                 shape=[None, self.embedding_dims],
-                                                 dtype=tf.float32)
+            # context_right_last = tf.get_variable('context_right_last',
+            #                                      shape=[self.batch_size, self.embedding_dims],
+            #                                      dtype=tf.float32)
+            context_right_last = tf.zeros((self.batch_size, self.embedding_dims))
+
             context_right_list = []
             for i, current_word in enumerate(embedding_chars_squeezed2):
-                context_right = self.conv_right(context_right_last, embedding_last)
+                context_right = self.conv_right(embedding_last, context_right_last)
                 context_right_list.append(context_right)
                 # update word_i context
                 embedding_last = current_word
@@ -117,7 +126,7 @@ class RCNN(object):
             # merge the context of word i 公式（3）
             x = []
             for index, current_word in enumerate(embedding_chars_squeezed):
-                representation=tf.concat([context_left[index], current_word, context_right[index]])
+                representation = tf.concat([context_left_list[index], current_word, context_right_list[index]])
                 x.append(representation) #[None, self.sentence_length, self.embedding_dims * 3]
 
             self.y_2 = tf.stack(x, axis=1) #[None, self.embedding_dims * 3]
@@ -135,18 +144,6 @@ class RCNN(object):
                                      shape=[self.num_classes],
                                      dtype=tf.float32)
             self.logits = tf.matmul(self.W, self.h_drop) + self.b
-
-        with tf.name_scope('loss'):
-            self.loss +=tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.input_y,
-                                                                       logits=self.logits)
-            l2_loss = tf.nn.l2_loss(self.W)
-            l2_loss += tf.nn.l2_loss(self.b)
-            self.loss += l2_loss * self.l2_reg_lambda
-
-
-
-
-
 
         # 2. left context combined
         with tf.name_scope('left_context'):
