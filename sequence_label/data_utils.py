@@ -46,6 +46,7 @@ def iob2(tags):
     """
     Check that tags have a valid IOB format.
     Tags in IOB1 format are converted to IOB2.
+    转化为标准的IOB标注方法
     """
     for i, tag in enumerate(tags):
         if tag == 'O':
@@ -128,6 +129,7 @@ def get_seg_features(string):
     Segment text with jieba
     features are represented in bies format
     s donates single word
+    词切割特征，0表示单独成词。1表示词的开始，2表示中间，3表示结束 和BIEO标注格式一样
     """
     seg_feature = []
 
@@ -282,17 +284,29 @@ def input_from_line(line, char_to_id):
 class BatchManager(object):
 
     def __init__(self, data,  batch_size):
+        """
+
+        :param data: [string, chars, segs, tags]
+        :param batch_size:
+        """
+
+        # 进行pad,保证words_size 和chars_size 相等，在embedding 的时候可以进行横向拼接
         self.batch_data = self.sort_and_pad(data, batch_size)
+        #
         self.len_data = len(self.batch_data)
 
     def sort_and_pad(self, data, batch_size):
+        # 一个epoch中batch次数
         num_batch = int(math.ceil(len(data) /batch_size))
+        # 根据句子长度进行降序排序
         sorted_data = sorted(data, key=lambda x: len(x[0]))
+        # 生成每一个batch的数据
         batch_data = list()
         for i in range(num_batch):
             batch_data.append(self.pad_data(sorted_data[i*batch_size : (i+1)*batch_size]))
         return batch_data
 
+    # padding method,确保在每一个batch中的char,words,string tags 的长苏是一致的，(不需要保证所有的序列长度么？？？？)
     @staticmethod
     def pad_data(data):
         strings = []
@@ -302,6 +316,7 @@ class BatchManager(object):
         max_length = max([len(sentence[0]) for sentence in data])
         for line in data:
             string, char, seg, target = line
+            #设置序列长度一致
             padding = [0] * (max_length - len(string))
             strings.append(string + padding)
             chars.append(char + padding)

@@ -168,7 +168,19 @@ def save_model(sess, model, path, logger):
 
 
 def create_model(session, Model_class, path, load_vec, config, id_to_char, logger):
-    # create model, reuse parameters if exists
+    """
+    create model, reuse parameters if exists
+    这里进行加载pre train word vec，
+    :param session:
+    :param Model_class:
+    :param path:
+    :param load_vec:
+    :param config:
+    :param id_to_char:
+    :param logger:
+    :return:
+    """
+    # 模型配置
     model = Model_class(config)
 
     ckpt = tf.train.get_checkpoint_state(path)

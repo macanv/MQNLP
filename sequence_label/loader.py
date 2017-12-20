@@ -102,10 +102,14 @@ def prepare_dataset(sentences, char_to_id, tag_to_id, lower=False, train=True):
         return x.lower() if lower else x
     data = []
     for s in sentences:
+        # 获取char序列
         string = [w[0] for w in s]
+        # 进行char-to-id编码
         chars = [char_to_id[f(w) if f(w) in char_to_id else '<UNK>']
                  for w in string]
+        # word级别的编码
         segs = get_seg_features("".join(string))
+        #tag 编码
         if train:
             tags = [tag_to_id[w[-1]] for w in s]
         else:
@@ -126,6 +130,7 @@ def augment_with_pretrained(dictionary, ext_emb_path, chars):
     assert os.path.isfile(ext_emb_path)
 
     # Load pretrained embeddings from file
+    # 记录pretrained embeddings mat 中的words
     pretrained = set([
         line.rstrip().split()[0].strip()
         for line in codecs.open(ext_emb_path, 'r', 'utf-8')

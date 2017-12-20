@@ -6,6 +6,7 @@ from tensorflow.contrib.crf import viterbi_decode
 from tensorflow.contrib.layers.python.layers import initializers
 
 import sequence_label.rnncell as rnn
+# from tensorflow.contrib import rnn
 from sequence_label.utils import result_to_json
 from sequence_label.data_utils import create_input, iobes_iob
 
@@ -131,6 +132,7 @@ class Model(object):
                 dtype=tf.float32,
                 sequence_length=lengths)
         return tf.concat(outputs, axis=2)
+
 
     def project_layer(self, lstm_outputs, name=None):
         """
