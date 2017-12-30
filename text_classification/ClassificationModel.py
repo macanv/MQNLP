@@ -83,12 +83,87 @@ class CNNClassification(basicModel):
 
 
     def create_feed_dict(self, is_train, data):
-        return
+        text, tags = data
+        feed_dict = {
+            self.input_x : np.asarray(text),
+            self.keep_dropout_prob : 1.0
+        }
+        # 如果是训练过程，需要传入文本类别标签以及更新dropout probability
+        if is_train:
+            feed_dict[self.input_y] =np.asarray(tags)
+            feed_dict[self.keep_dropout_prob] = self.config['keep_dropout_prob']
+        return feed_dict
 
     def run_step(self, sess, is_train, data):
-        pass
+        feed_dict = self.create_feed_dict(is_train, data)
+        if is_train:
+            global_step, loss, _ = sess.run(
+                [self.global_step, self.loss, self.train_op],
+                feed_dict
+            )
+            return global_step, loss
+        else:
+            logits = sess.run(self.logits, feed_dict)
+            return logits
 
     def evaluate(self, sess, data, id_to_tag):
         with tf.name_scope('evaluate'):
             correct = tf.equal(tf.argmax(self.logits, axis=1), tf.argmax(self.input_y, axis=1))
             self.accuracy = tf.reduce_mean(tf.cast(correct, dtype=tf.float32), name='accuracy')
+
+    def build_network(self):
+        self.embedding_layer()
+        self.hidden_layer()
+        self.project_layer()
+        self.loss_layer()
+
+        with tf.variable_scope("optimizer"):
+            optimizer = self.config["optimizer"]
+            if optimizer == "sgd":
+                self.opt = tf.train.GradientDescentOptimizer(self.lr)
+            elif optimizer == "adam":
+                self.opt = tf.train.AdamOptimizer(self.lr)
+            elif optimizer == "adgrad":
+                self.opt = tf.train.AdagradOptimizer(self.lr)
+            else:
+                raise KeyError
+
+            grads_vars = self.opt.compute_gradients(self.loss)
+            capped_grads_vars = [[tf.clip_by_value(g, -self.config["clip"], self.config["clip"]), v]
+                                 for g, v in grads_vars]
+            self.train_op = self.opt.apply_gradients(capped_grads_vars, self.global_step)
+
+
+class RNNs(basicModel):
+    """
+    Using LSTM or GRU neural network for text classification
+    """
+    def embedding_layer(self):
+        super().embedding_layer()
+
+    def project_layer(self):
+        super().project_layer()
+
+    def __init__(self, config):
+        super().__init__(config)
+
+    def define_placeholder_and_variable(self):
+        super().define_placeholder_and_variable()
+
+    def run_step(self, sess, is_train, data):
+        super().run_step(sess, is_train, data)
+
+    def evaluate(self, sess, data, id_to_tag):
+        super().evaluate(sess, data, id_to_tag)
+
+    def build_network(self):
+        super().build_network()
+
+    def hidden_layer(self):
+        super().hidden_layer()
+
+    def create_feed_dict(self, is_train, data):
+        super().create_feed_dict(is_train, data)
+
+    def loss_layer(self, logits):
+        super().loss_layer(logits)

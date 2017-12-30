@@ -17,6 +17,7 @@ class basicModel(object):
         self.embedding_dims = config['embedding_dims']
         self.num_tags = config['num_tags']
         self.le_reg_lambda = config['l2_reg_lambda']
+        self.lr = config['learning_rate']
 
         self.loss = tf.constant(0.0, dtype=tf.float32)
 
@@ -25,16 +26,6 @@ class basicModel(object):
 
         self.batch_size = tf.shape(self.input_x)[0]
 
-        with tf.variable_scope("optimizer"):
-            optimizer = self.config["optimizer"]
-            if optimizer == "sgd":
-                self.opt = tf.train.GradientDescentOptimizer(self.lr)
-            elif optimizer == "adam":
-                self.opt = tf.train.AdamOptimizer(self.lr)
-            elif optimizer == "adgrad":
-                self.opt = tf.train.AdagradOptimizer(self.lr)
-            else:
-                raise KeyError
         self.saver = tf.train.Saver(tf.global_variables(), max_to_keep=5)
 
         # 其他参数
@@ -118,6 +109,9 @@ class basicModel(object):
         """
         return
 
+    @abstractclassmethod
+    def build_network(self):
+        return
 
     @abstractclassmethod
     def evaluate(self, sess, data, id_to_tag):
