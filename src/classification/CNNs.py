@@ -13,6 +13,7 @@ class CNNClassification(basicModel):
     """
     CNN 文本分类
     """
+
     def __init__(self, config):
         super().__init__(config=config)
         self.filters_size = config['filters_size']
@@ -23,11 +24,23 @@ class CNNClassification(basicModel):
         self.num_filters_total = self.num_filters * len(self.filters_size)
 
 
-    def embedding_layer(self):
-        embedded_chars = super().embedding_layer()
-        # CNN 的卷积输入参数需要4维，而embedding lookup 后的维度为三维，需要扩展一维[None, sequence_length, embedding_dims, 1]
-        self.embedded_chars_expanded = tf.expand_dims(embedded_chars, -1)
+        # 1. embedding layer
+        self.embedding_layer()
 
+        # 2. convolute layer
+        self.hidden_layer()
+        # 3. full conection layer
+        self.project_layer()
+        #4. compute loss
+        self.loss_layer()
+        #5. compute accuracy
+        self.evaluate()
+
+
+    def embedding_layer(self):
+        super().embedding_layer()
+        # CNN 的卷积输入参数需要4维，而embedding lookup 后的维度为三维，需要扩展一维[None, sequence_length, embedding_dims, 1]
+        self.embedded_chars_expanded = tf.expand_dims(self.embedded_chars, -1)
 
     def hidden_layer(self):
         """
@@ -65,17 +78,15 @@ class CNNClassification(basicModel):
         with tf.name_scope('dropout'):
             self.h_dropout = tf.nn.dropout(self.h_pool_flat, self.keep_dropout_prob)
 
-
     def project_layer(self):
         with tf.name_scope('project'):
             W = tf.get_variable('W', [self.num_filters_total, self.num_tags], initializer=self.initializer)
-            b = tf.Variable(tf.constant(0,1, shape=[self.num_tags]), name='b')
+            b = tf.Variable(tf.constant(0, 1, shape=[self.num_tags]), name='b')
             self.l2_loss += tf.nn.l2_loss(W)
             self.l2_loss += tf.nn.l2_loss(b)
 
             # using softmax output, using softmax func or not ,will not affect for last result
             self.logits = tf.nn.softmax(tf.nn.xw_plus_b(self.h_dropout, W, b))
-
 
     def loss_layer(self):
         with tf.name_scope('loss'):
@@ -88,7 +99,7 @@ class CNNClassification(basicModel):
             correct = tf.equal(tf.argmax(self.logits, axis=1), tf.argmax(self.input_y, axis=1))
             self.accuracy = tf.reduce_mean(tf.cast(correct, dtype=tf.float32), name='accuracy')
 
-    def build_network(self, sess):
+    def build_network(self):
         self.embedding_layer()
         self.hidden_layer()
         self.project_layer()
@@ -110,9 +121,9 @@ class CNNClassification(basicModel):
                                  for g, v in self.grads_vars]
             self.train_op = self.opt.apply_gradients(capped_grads_vars, self.global_step)
 
-        # if summary is True, using tensorborad to log train process
-        if self.config['summary']:
-            self.summary(sess)
+            # # if summary is True, using tensorborad to log train process
+            # if self.config['summary']:
+            #     self.summary(sess)
 
     def summary(self, sess):
         """
@@ -149,13 +160,12 @@ class CNNClassification(basicModel):
         dev_summary_dir = os.path.join(out_dir, "summaries", "dev")
         self.dev_summary_writer = tf.summary.FileWriter(dev_summary_dir, sess.graph)
 
-
     def create_feed_dict(self, is_train, data):
         text, tags = data
         feed_dict = {
-            self.input_x:np.asarray(text),
-            self.input_y:np.asarray(tags),
-            self.keep_dropout_prob:1.0
+            self.input_x: np.asarray(text),
+            self.input_y: np.asarray(tags),
+            self.keep_dropout_prob: 1.0
         }
         # 如果是训练过程，需要传入文本类别标签以及更新dropout probability
         if is_train:
