@@ -1,0 +1,35 @@
+#Parameters
+#
+ALLOW_SOFT_PLACEMENT=True
+#batch size
+BATCH_SIZE=32
+# check point
+CHECKPOINT_EVERY=100
+# dropout rate
+DROPOUT_KEEP_PROB=0.5
+# embedding dims
+EMBEDDING_DIM=200
+# evaluate time
+EVALUATE_EVERY=100
+# cnn filter sizes
+FILTER_SIZES=3,4,5
+# le reg
+L2_REG_LAMBDA=0.0
+#
+LOG_DEVICE_PLACEMENT=False
+#
+NUM_CHECKPOINTS=5
+# number of tags
+NUM_CLASSES=3
+# epochs sizes
+NUM_EPOCHS=100
+# filter size of each filter
+NUM_FILTERS=200
+# each sentence max length
+MAXLEN=400
+
+# model save path
+checkpoint_prefix='checkpoint/model'
+# file path
+file_path='thu_data_3class_3k'
+
