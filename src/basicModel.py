@@ -60,7 +60,7 @@ class basicModel(object):
             self.w_embedding = tf.get_variable('w_embedding',
                                                shape=[self.vocab_size, self.embedding_dims],
                                                dtype=tf.float32, initializer=tf.random_normal_initializer)
-            self.embedding_chars = tf.nn.embedding_lookup(self.w_embedding, self.input_x)
+            self.embedded_chars = tf.nn.embedding_lookup(self.w_embedding, self.input_x)
 
 
 
