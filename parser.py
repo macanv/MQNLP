@@ -31,6 +31,7 @@ def clean_text(text):
     text = re.sub('主题: .*\n', '', text)
     text = re.sub('出版物名称: .*\n', '', text)
     text = re.sub('出版日期: .*\n', '', text)
+    text = re.sub('地点:.*\n', '', text)
     text = re.sub('出版物', '', text)
     text = re.sub('主题: .*\n', '', text)
     text = re.sub('摘要:', '', text)
@@ -188,13 +189,13 @@ def cmd():
     save(save_path, 'neutral', text_neu)
 
 if __name__ == '__main__':
-    # cmd()
+    cmd()
 
-    path = r'C:\Users\Macan\Desktop\论文数据标注new version\annotation_after_2008'
-    fds = load_data(path)
-    text_pos, text_neg, text_neu = parser(fds)
-
-    save_path = r'C:\Users\Macan\Desktop\论文数据标注new version'
-    save(save_path, 'pos', text_pos)
-    save(save_path, 'neg', text_neg)
-    save(save_path, 'neutral', text_neu)
+    # path = r'C:\Users\Macan\Desktop\论文数据标注new version\annotation_after_2008'
+    # fds = load_data(path)
+    # text_pos, text_neg, text_neu = parser(fds)
+    #
+    # save_path = r'C:\Users\Macan\Desktop\论文数据标注new version'
+    # save(save_path, 'pos', text_pos)
+    # save(save_path, 'neg', text_neg)
+    # save(save_path, 'neutral', text_neu)
