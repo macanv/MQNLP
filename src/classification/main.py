@@ -192,7 +192,7 @@ def train_cnns():
 
             print('\nBset dev at {}, accuray {:g}'.format(best_step, best_acc))
 def main(_):
-    # CNNs methods
+    # CNNs methods2
     train_cnns()
 
 if __name__ == '__main__':
