@@ -192,9 +192,11 @@ def train_cnns():
 
             print('\nBset dev at {}, accuray {:g}'.format(best_step, best_acc))
 def main(_):
+    # CNNs methods
     train_cnns()
 
 if __name__ == '__main__':
+
     tf.app.run()
 
 
