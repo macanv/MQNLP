@@ -162,3 +162,14 @@ def load_config(config_path=None):
         return config
 
 
+class batch_manager(object):
+
+    def __init__(self, file_path, maxlen, batch_size, epochs):
+        """
+        加载指定目录，通过maxlen参数，进行padding数据，并且按照batch_size 和epochs 进行batch generator
+        :param file_path: 
+        :param maxlen: 
+        """
+        input_x, input_y, self.word_index = load_data(file_path, maxlen)
+        self.batches = batch_iter(list(zip(input_x, input_y)), batch_size, epochs)
+

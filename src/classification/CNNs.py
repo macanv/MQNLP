@@ -9,188 +9,133 @@ import datetime
 from src.basicModel import basicModel
 
 
-class CNNClassification(basicModel):
+class CNNClassification(object):
     """
-    CNN 文本分类
+    CNN 文本分类的网络构建
+    包括embedding layer, Convolutional layer max-pooling, softmax layer
     """
 
-    def __init__(self, config):
-        super().__init__(config=config)
-        self.filters_size = config['filters_size']
-        self.num_filters = config['num_filters']
-        self.l2_loss = tf.constant(.0, dtype=tf.float32)
-
-        # 经过max pooling 后，得到的特征向量的维度
-        self.num_filters_total = self.num_filters * len(self.filters_size)
-
-
-        # 1. embedding layer
-        self.embedding_layer()
-
-        # 2. convolute layer
-        self.hidden_layer()
-        # 3. full conection layer
-        self.project_layer()
-        #4. compute loss
-        self.loss_layer()
-        #5. compute accuracy
-        self.evaluate()
-
-
-    def embedding_layer(self):
-        super().embedding_layer()
-        # CNN 的卷积输入参数需要4维，而embedding lookup 后的维度为三维，需要扩展一维[None, sequence_length, embedding_dims, 1]
-        self.embedded_chars_expanded = tf.expand_dims(self.embedded_chars, -1)
-
-    def hidden_layer(self):
+    def __init__(self, sequence_length, num_tags, vocab_size, embedding_size, filter_sizes, num_filters,
+                 l2_reg_lambda=0.0):
         """
-        using convolution layer for text classification
-        :return:
+        
+        :param sequence_length: 句子长度
+        :param num_tags:  类别数量
+        :param vocab_size:  词个数
+        :param embedding_size: wordvec 
+        :param filter_sizes:  卷积核高度
+        :param num_filters:  每种size 卷积核个数
+        :param l2_reg_lambda:  l2 正则项
         """
+
+        self.sequence_length = sequence_length
+        self.num_tags = num_tags
+        self.vocab_size = vocab_size
+        self.embedding_size = embedding_size
+        self.filter_sizes = filter_sizes
+        self.num_filters = num_filters
+        self.l2_reg_lambda = l2_reg_lambda
+
+        # 定义输入，输出，和dropout的参数
+        # [样本个数，每个样本的词个数]
+        self.input_x = tf.placeholder(tf.int32, [None, sequence_length], name='input_x')
+        # [样本个数， 类别个数]
+        self.input_y = tf.placeholder(tf.float32, [None, num_tags], name='input_y')
+        # dropout probability
+        self.dropout_keep_prob = tf.placeholder(tf.float32, name='dropout_keep_prob')
+
+        # l2 正则 损失
+        self.l2_loss = tf.constant(0.0)
+
+        # 声明两个变量
+        self.loss = tf.constant(0.0)
+        self.accuracy = tf.constant(0.0)
+
+        self.network()
+
+
+    def network(self):
+        """
+        网络构建
+        :return: 
+        """
+        # embedding layer
+        with tf.device('/cpu:0'), tf.name_scope('embedding'):
+            # embedding 权重
+            self.W = tf.Variable(
+                tf.random_uniform([self.vocab_size, self.embedding_size], -1., 1.),
+                name="W")
+            # look_up embedding 后得到一个三维的tensor [None,seq_length, embedding_size]
+            self.embedded_chars = tf.nn.embedding_lookup(self.W, self.input_x)
+            # 将embedded_chars 向量扩充一维成一个四维向量[None,seq_length, embedding_size, 1] ,这是卷积核
+            self.embedded_chars_expanded = tf.expand_dims(self.embedded_chars, -1)
+
+        # 卷积操作和最大池化操作
         pooled_output = []
-        for i, filter_size in enumerate(self.filters_size):
-            with tf.name_scope('conv-maxpool-{}'.format(filter_size)):
-                # 卷积核参数
-                filter_shape = [filter_size, self.embedding_dims, 1, self.num_filters]
-                W = tf.get_variable('W', shape=filter_shape, initializer=self.initializer)
-                b = tf.get_variable('b', shape=[self.num_filters])
-                conv = tf.nn.conv2d(input=self.embedded_chars_expanded,
-                                    filter=W,
+        for i, filter_size in enumerate(self.filter_sizes):
+            with tf.name_scope('conv-maxpool-%s' % filter_size):
+                # 卷积层
+                # 卷积核的维度
+                filter_shape = [filter_size, self.embedding_size, 1, self.num_filters]
+                W = tf.Variable(tf.truncated_normal(filter_shape, stddev=0.1), name="W")
+                b = tf.Variable(tf.constant(0.1, shape=[self.num_filters]), name='b')
+                conv = tf.nn.conv2d(self.embedded_chars_expanded,
+                                    W,
                                     strides=[1, 1, 1, 1],
-                                    padding='VAILD',
-                                    name='conv')
-                # using relu activation func
-                h = tf.nn.relu(conv, name='relu')
-                # 使用最大池化层，这里的windows_size 表示的是feature_map的height, 也就是表示直接取每一个feature maps中的最大值
-                pooling_window_size = self.sequence_length - filter_size + 1
-                pooled = tf.nn.max_pool(value=h,
-                                        ksize=[1, pooling_window_size, 1, 1],
-                                        strides=[1, 1, 1, 1],
+                                    padding='VALID',
+                                    name='conv'
+                                    )
+                # 使用ReLU非线性激活函数得到一个feature map
+                h = tf.nn.relu(tf.nn.bias_add(conv, b), name='relu')
+
+                # 对刚才卷积生成的feature map 进行max-pooling，得到最大的
+                pooled = tf.nn.max_pool(h,
+                                        ksize=[1, self.sequence_length - filter_size + 1, 1, 1],  # 池化窗口大小 第二个参数的意思height
+                                        # 直接对featrue map 的所有进行查找最大值
+                                        strides=[1, 1, 1, 1],  # 窗口在每一个维度上滑动的步长
                                         padding='VALID',
-                                        name='max-pooling')
-
+                                        name='pool')
+                # 当前filter 的feature maps的池化结果拼到一起
                 pooled_output.append(pooled)
-        # 将所有卷积的结果拼接到一个tensor中
 
-        self.h_pool = tf.concat(pooled_output, axis=-1)
-        self.h_pool_flat = tf.reshape(self.h_pool, [-1, self.num_filters_total])
+        # 组合所有的feature maps 的池化结果，总个数一共是filter_size * 不同filter的个数
+        # 卷积核的总个数
+        num_filters_total = self.num_filters * len(self.filter_sizes)
+        self.h_pool = tf.concat(pooled_output, 3)
+        self.h_pool_flat = tf.reshape(self.h_pool, [-1, num_filters_total])
 
+        # dropout layer
         with tf.name_scope('dropout'):
-            self.h_dropout = tf.nn.dropout(self.h_pool_flat, self.keep_dropout_prob)
+            self.h_drop = tf.nn.dropout(self.h_pool_flat, self.dropout_keep_prob)
 
-    def project_layer(self):
-        with tf.name_scope('project'):
-            W = tf.get_variable('W', [self.num_filters_total, self.num_tags], initializer=self.initializer)
-            b = tf.Variable(tf.constant(0, 1, shape=[self.num_tags]), name='b')
+        # 计算输出的概率
+        with tf.name_scope('output'):
+            W = tf.get_variable('W',
+                                shape=[num_filters_total, self.num_classes],  #
+                                initializer=tf.contrib.layers.xavier_initializer())
+            b = tf.Variable(tf.constant(0.1, shape=[self.num_classes], name='b'))
             self.l2_loss += tf.nn.l2_loss(W)
             self.l2_loss += tf.nn.l2_loss(b)
 
-            # using softmax output, using softmax func or not ,will not affect for last result
-            self.logits = tf.nn.softmax(tf.nn.xw_plus_b(self.h_dropout, W, b))
+            self.scores = tf.nn.xw_plus_b(self.h_drop, W, b, name='scores')
+            # using softmax to normolize output
+            # self.scores = tf.nn.softmax(logits=self.scores)
+            # 找到概率最大的类别
+            self.predictions = tf.argmax(self.scores, 1, name='predictons')
 
-    def loss_layer(self):
+        # 计算损失
         with tf.name_scope('loss'):
-            self.loss += tf.nn.softmax_cross_entropy_with_logits(logits=self.logits, labels=self.input_y)
-            # add l2 reg loss
-            self.loss = tf.reduce_mean(self.loss) + self.l2_loss * self.l2_reg_lambda
+            # 计算交叉熵损失
+            losses = tf.nn.softmax_cross_entropy_with_logits(logits=self.scores, labels=self.input_y)
+            # 总共的损失为交叉熵均值 和 l2正则损失
+            self.loss = tf.reduce_mean(losses) + self.l2_loss * self.l2_reg_lambda
 
-    def evaluate(self, sess, data, id_to_tag):
-        with tf.name_scope('evaluate'):
-            correct = tf.equal(tf.argmax(self.logits, axis=1), tf.argmax(self.input_y, axis=1))
-            self.accuracy = tf.reduce_mean(tf.cast(correct, dtype=tf.float32), name='accuracy')
+        # 计算正确率
+        with tf.name_scope('accuracy'):
+            self.correct_predictions = tf.equal(self.predictions, tf.argmax(self.input_y, 1))
+            self.accuracy = tf.reduce_mean(tf.cast(self.correct_predictions, tf.float32), name='accuracy')
 
-    def build_network(self):
-        self.embedding_layer()
-        self.hidden_layer()
-        self.project_layer()
-        self.loss_layer()
 
-        with tf.variable_scope("optimizer"):
-            optimizer = self.config["optimizer"]
-            if optimizer == "sgd":
-                self.opt = tf.train.GradientDescentOptimizer(self.lr)
-            elif optimizer == "adam":
-                self.opt = tf.train.AdamOptimizer(self.lr)
-            elif optimizer == "adgrad":
-                self.opt = tf.train.AdagradOptimizer(self.lr)
-            else:
-                raise KeyError
 
-            self.grads_vars = self.opt.compute_gradients(self.loss)
-            capped_grads_vars = [[tf.clip_by_value(g, -self.config["clip"], self.config["clip"]), v]
-                                 for g, v in self.grads_vars]
-            self.train_op = self.opt.apply_gradients(capped_grads_vars, self.global_step)
 
-            # # if summary is True, using tensorborad to log train process
-            # if self.config['summary']:
-            #     self.summary(sess)
 
-    def summary(self, sess):
-        """
-        记录训练过程中的了loss情况
-        :return: 
-        """
-        # 梯度损失
-        grad_summaries = []
-        for g, v in self.grads_vars:
-            if g is not None:
-                grad_hist_summary = tf.summary.histogram("{}/grad/hist".format(v.name), g)
-                sparsity_summary = tf.summary.scalar("{}/grad/sparsity".format(v.name),
-                                                     tf.nn.zero_fraction(g))
-                grad_summaries.append(grad_hist_summary)
-                grad_summaries.append(sparsity_summary)
-        grad_summaries_merged = tf.summary.merge(grad_summaries)
-
-        # Output directory for models and summaries
-        timestamp = str(int(time.time()))
-        out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs", timestamp))
-        print("Writing to {}\n".format(out_dir))
-
-        # Summaries for loss and accuracy
-        loss_summary = tf.summary.scalar("loss", self.loss)
-        acc_summary = tf.summary.scalar("accuracy", self.accuracy)
-
-        # Train Summaries
-        self.train_summary_op = tf.summary.merge([loss_summary, acc_summary, grad_summaries_merged])
-        train_summary_dir = os.path.join(out_dir, "summaries", "train")
-        self.train_summary_writer = tf.summary.FileWriter(train_summary_dir, sess.graph)
-
-        # Dev summaries
-        self.dev_summary_op = tf.summary.merge([loss_summary, acc_summary])
-        dev_summary_dir = os.path.join(out_dir, "summaries", "dev")
-        self.dev_summary_writer = tf.summary.FileWriter(dev_summary_dir, sess.graph)
-
-    def create_feed_dict(self, is_train, data):
-        text, tags = data
-        feed_dict = {
-            self.input_x: np.asarray(text),
-            self.input_y: np.asarray(tags),
-            self.keep_dropout_prob: 1.0
-        }
-        # 如果是训练过程，需要传入文本类别标签以及更新dropout probability
-        if is_train:
-            feed_dict[self.keep_dropout_prob] = self.config['keep_dropout_prob']
-        return feed_dict
-
-    def run(self, sess, is_train, data):
-        feed_dict = self.create_feed_dict(is_train, data)
-        if is_train:
-            global_step, loss, accuracy, summaries, _ = sess.run(
-                [self.global_step, self.loss, self.accuracy, self.train_summary_op, self.train_op],
-                feed_dict
-            )
-            # consor output
-            if global_step % 20 == 0:
-                time_str = datetime.datetime.now().isoformat()
-                print("{}: step {}, loss {:g}, acc {:g}".format(time_str, global_step, loss, accuracy))
-            # add summaries
-            self.train_summary_writer.add_summary(summaries, global_step)
-            return global_step, loss, accuracy
-        else:
-            global_step, summaries, loss, accuracy = sess.run(
-                [self.global_step, self.dev_summary_op, self.loss, self.accuracy],
-                feed_dict)
-
-            time_str = datetime.datetime.now().isoformat()
-            print("{}: step {}, loss {:g}, acc {:g}".format(time_str, global_step, loss, accuracy))
-            return global_step, loss, accuracy
