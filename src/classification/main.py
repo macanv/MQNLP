@@ -23,7 +23,7 @@ def train_cnns():
     # ==================================================
 
     # Data loading params
-    tf.flags.DEFINE_float("dev_sample_percentage", .1, "Percentage of the training data to use for validation")
+    tf.flags.DEFINE_float("train_size", .1, "Percentage of the training data to use for validation")
     tf.flags.DEFINE_string("train_path", "thu_train", "Data source.")
     tf.flags.DEFINE_string("dev_path", "thu_dev", "Data source.")
     tf.flags.DEFINE_integer('sequence_length', 400, 'length of each sequence')
