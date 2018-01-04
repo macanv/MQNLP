@@ -6,7 +6,7 @@ import os
 import time
 import numpy as np
 import datetime
-from src.basicModel import basicModel
+# from src.basicModel import basicModel
 
 
 class CNNClassification(object):
@@ -111,16 +111,16 @@ class CNNClassification(object):
         # 计算输出的概率
         with tf.name_scope('output'):
             W = tf.get_variable('W',
-                                shape=[num_filters_total, self.num_classes],  #
+                                shape=[num_filters_total, self.num_tags],  #
                                 initializer=tf.contrib.layers.xavier_initializer())
-            b = tf.Variable(tf.constant(0.1, shape=[self.num_classes], name='b'))
+            b = tf.Variable(tf.constant(0.1, shape=[self.num_tags], name='b'))
             self.l2_loss += tf.nn.l2_loss(W)
             self.l2_loss += tf.nn.l2_loss(b)
 
             self.scores = tf.nn.xw_plus_b(self.h_drop, W, b, name='scores')
             # using softmax to normolize output
             # self.scores = tf.nn.softmax(logits=self.scores)
-            # 找到概率最大的类别
+            # 以概率最大，获得每个样本 的类别
             self.predictions = tf.argmax(self.scores, 1, name='predictons')
 
         # 计算损失
@@ -135,7 +135,7 @@ class CNNClassification(object):
             self.correct_predictions = tf.equal(self.predictions, tf.argmax(self.input_y, 1))
             self.accuracy = tf.reduce_mean(tf.cast(self.correct_predictions, tf.float32), name='accuracy')
 
-
-
-
-
+        # 计算正确样本个数
+        with tf.name_scope('num_correct'):
+            correct = tf.equal(self.predictions, tf.argmax(self.input_y, 1))
+            self.num_correct = tf.reduce_sum(tf.cast(correct, 'float'))

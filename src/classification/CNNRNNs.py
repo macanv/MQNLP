@@ -4,134 +4,150 @@ from tensorflow.contrib import rnn
 
 import numpy as np
 
-from src.basicModel import basicModel
+# from src.basicModel import basicModel
 
 
-class RNNsClassification(basicModel):
+class CNNRNNsClassification(object):
     """
     Using LSTM or GRU neural network for text classification
     """
-
-    def __init__(self, config):
-        super().__init__(config)
-
-        self.hidden_unit = config['hidden_unit']
-        self.cell = config['cell']
-        self.num_layer = config['num_layers']
-
-        # embedding layer
-        self.embedding_layer()
-        # lstm or gru layer
-        self.hidden_layer()
-        # full conection and softmax layer
-        self.project_layer()
-        # compute loss
-        self.loss_layer()
-        # compute accuracy
-        self.evaluate()
-
-    def embedding_layer(self):
-        super().embedding_layer()
-        # CNN 的卷积输入参数需要4维，而embedding lookup 后的维度为三维，需要扩展一维[None, sequence_length, embedding_dims, 1]
-        self.embedded_chars_expanded = tf.expand_dims(self.embedded_chars, -1)
-
-    def witch_cell(self):
-        if self.cell.find('lstm') >= 0:
-            cell_tmp = rnn.BasicLSTMCell(self.hidden_unit)
-        elif self.cell.find('gru') >= 0:
-            cell_tmp = rnn.GRUCell(self.hidden_unit)
-        # 是否需要进行dropout
-        if self.keep_dropout_prob is not None:
-            cell_tmp = rnn.DropoutWrapper(cell_tmp, output_keep_prob=self.keep_dropout_prob)
-        return cell_tmp
-
-    def bi_dir_rnn(self):
+    def __init__(self, embedding_mat, vocab_size, non_static, hidden_unit, sequence_length, max_pool_size,
+                 num_tags, embedding_dim, filter_sizes, num_filters, cell='lstm', num_layers=1, l2_reg_lambda=0.0):
         """
-        双向RNN
-        :return:
+        
+        :param embedding_mat:  预训练的词向量
+        :param vocab_size: 词典大小
+        :param non_static:  是否使用static 词向量
+        :param hidden_unit: rnn 隐含单元数量 
+        :param sequence_length:  文本长度
+        :param max_pool_size:  CNN 最大池化窗口大小
+        :param num_tags: 文本类别数量  
+        :param embedding_dim: 词向量维度  
+        :param filter_sizes: CNN 卷积核大小
+        :param num_filters:  卷积核个数
+        :param cell: 使用哪一种cell (LSTM/GRU)
+        :param num_layers:  RNN 层数
+        :param l2_reg_lambda: 
         """
-        if self.cell.startswith('bi'):
-            cell_fw = self.witch_cell()
-            cell_bw = self.witch_cell()
-        if self.keep_dropout_prob is not None:
-            cell_bw = rnn.DropoutWrapper(cell_bw, output_keep_prob=self.keep_dropout_prob)
-            cell_fw = rnn.DropoutWrapper(cell_fw, output_keep_prob=self.keep_dropout_prob)
-        return cell_fw, cell_bw
+        self.embedding_mat = embedding_mat
+        self.vocab_size = vocab_size
+        self.non_static = non_static
+        self.hidden_unit = hidden_unit
+        self.sequence_length = sequence_length
+        self.max_pool_size = max_pool_size
+        self.num_tags = num_tags
+        self.embedding_dim = embedding_dim
+        self.filter_sizes = filter_sizes
+        self.num_filters = num_filters
+        self.cell = cell
+        self.num_layers = num_layers
+        self.l2_reg_lambda = l2_reg_lambda
 
-    def hidden_layer(self):
-        super().hidden_layer()
-        # using lstm or gru for text classification
+        self.l2_loss = tf.constant(0.0)
+        self.loss = tf.constant(0.0)
+        self.accuracy = tf.constant(0.0)
+        self.num_correct = tf.constant(0)
+
+        self.input_x = tf.placeholder(tf.int32, [None, sequence_length], name='input_x')
+        self.input_y = tf.placeholder(tf.float32, [None, num_tags], name='input_y')
+        self.dropout_keep_prob = tf.placeholder(tf.float32, name='dropout_keep_prob')
+        self.batch_size = tf.placeholder(tf.int32, [])
+        self.pad = tf.placeholder(tf.float32, [None, 1, embedding_dim, 1], name='pad')
+        self.real_len = tf.placeholder(tf.int32, [None], name='real_len')
 
 
+        # 网络
+        self.network()
 
-        with tf.name_scope('rnn'):
-            if self.cell.startswith("bi"):
-                cell_fw, cell_bw = self.bi_dir_rnn()
-                if self.num_layer > 1:
-                    cell_fw = rnn.MultiRNNCell([cell_fw] * self.num_layer, state_is_tuple=True)
-                    cell_bw = rnn.MultiRNNCell([cell_bw] * self.num_layer, state_is_tuple=True)
+    def network(self):
 
-                outputs, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw, cell_bw, self.embedded_chars,
-                                                             dtype=tf.float32)
-
-                # 将双向的LSTM 输出拼接，得到[None, time_step, hidden_dims * 2]
-                outputs = tf.concat(outputs, axis=2)
+        with tf.device('/cpu:0'), tf.name_scope('embedding'):
+            if not self.non_static:
+                W = tf.constant(self.embedding_mat, name='W')
             else:
-                cells = self.witch_cell()
-                if self.num_layer > 1:
-                    cells = rnn.MultiRNNCell([cells] * self.num_layer, state_is_tuple=True)
+                #W = tf.Variable(embedding_mat, name='W')
+                W = tf.Variable(
+                tf.random_uniform([self.vocab_size, self.embedding_dim], -1., 1.),
+                name="W")
+            self.embedded_chars = tf.nn.embedding_lookup(W, self.input_x)
+            emb = tf.expand_dims(self.embedded_chars, -1)
 
-                # outputs:[batch, timestep_size, hidden_size]
-                # state:[layer_num, 2, batch_size, hidden_size]
-                outputs, _ = tf.nn.dynamic_rnn(cells, self.embedded_chars, dtype=tf.float32)
-            # 取出最后一个状态的输出 [none, 1, hidden_dims * 2]
-            self.h_state = outputs[:, -1, :]
+        pooled_concat = []
+        reduced = np.int32(np.ceil((self.sequence_length) * 1.0 / self.max_pool_size))
 
-    def project_layer(self):
-        super().project_layer()
+        for i, filter_size in enumerate(self.filter_sizes):
+            with tf.name_scope('conv-maxpool-%s' % filter_size):
+                # Zero paddings so that the convolution output have dimension batch x sequence_length x emb_size x channel
+                num_prio = (filter_size - 1) // 2
+                num_post = (filter_size - 1) - num_prio
+                pad_prio = tf.concat([self.pad] * num_prio, 1)
+                pad_post = tf.concat([self.pad] * num_post, 1)
+                emb_pad = tf.concat([pad_prio, emb, pad_post], 1)
+
+                filter_shape = [filter_size, self.embedding_size, 1, self.num_filters]
+                W = tf.Variable(tf.truncated_normal(filter_shape, stddev=0.1), name='W')
+                b = tf.Variable(tf.constant(0.1, shape=[self.num_filters]), name='b')
+                conv = tf.nn.conv2d(emb_pad, W, strides=[1, 1, 1, 1], padding='VALID', name='conv')
+
+                h = tf.nn.relu(tf.nn.bias_add(conv, b), name='relu')
+
+                # Maxpooling over the outputs
+                pooled = tf.nn.max_pool(h,
+                                        ksize=[1, self.max_pool_size, 1, 1],
+                                        strides=[1, self.max_pool_size, 1, 1],
+                                        padding='SAME',
+                                        name='pool')
+                pooled = tf.reshape(pooled, [-1, reduced, self.num_filters])
+                pooled_concat.append(pooled)
+
+        pooled_concat = tf.concat(pooled_concat, 2)
+        pooled_concat = tf.nn.dropout(pooled_concat, self.dropout_keep_prob)
+
+        if self.cell == 'lstm':
+            lstm_cell = rnn.BasicLSTMCell(num_units=self.hidden_unit)
+        elif self.cell == 'gru':
+            lstm_cell = rnn.GRUCell(num_units=self.hidden_unit)
+
+        # add avg dropout at each layer
+        if self.dropout_keep_prob is not None:
+            lstm_cell = tf.contrib.rnn.DropoutWrapper(lstm_cell, output_keep_prob=self.dropout_keep_prob)
+
+        self._initial_state = lstm_cell.zero_state(self.batch_size, tf.float32)
+        # inputs = [tf.squeeze(input_, [1]) for input_ in tf.split(1, reduced, pooled_concat)]
+        inputs = [tf.squeeze(input_, [1]) for input_ in tf.split(pooled_concat, num_or_size_splits=int(reduced), axis=1)]
+        # outputs, state = tf.nn.rnn(lstm_cell, inputs, initial_state=self._initial_state, sequence_length=self.real_len)
+        outputs, state = tf.contrib.rnn.static_rnn(lstm_cell, inputs, initial_state=self._initial_state,
+                                                   sequence_length=self.real_len)
+
+        # Collect the appropriate last words into variable output (dimension = batch x embedding_size)
+        output = outputs[0]
+        with tf.variable_scope('Output'):
+            tf.get_variable_scope().reuse_variables()
+            one = tf.ones([1, self.hidden_unit], tf.float32)
+            for i in range(1, len(outputs)):
+                ind = self.real_len < (i + 1)
+                ind = tf.to_float(ind)
+                ind = tf.expand_dims(ind, -1)
+                mat = tf.matmul(ind, one)
+                output = tf.add(tf.multiply(output, mat), tf.multiply(outputs[i], 1.0 - mat))
+
         with tf.name_scope('output'):
-            if self.cell.startswith('bi'):
-                self.W = tf.Variable(tf.truncated_normal([self.hidden_unit * 2, self.num_tags], stddev=0.1),
-                                     dtype=tf.float32, name='W')
-            else:
-                self.W = tf.Variable(tf.truncated_normal([self.hidden_unit, self.num_tags], stddev=0.1),
-                                     dtype=tf.float32, name='W')
-            self.b = tf.Variable(tf.constant(0.1, shape=[self.num_tags]), dtype=tf.float32, name='b')
+            self.W = tf.Variable(tf.truncated_normal([self.hidden_unit, self.num_classes], stddev=0.1), name='W')
+            b = tf.Variable(tf.constant(0.1, shape=[self.num_classes]), name='b')
+            self.l2_loss += tf.nn.l2_loss(W)
+            self.l2_loss += tf.nn.l2_loss(b)
+            self.scores = tf.nn.xw_plus_b(output, self.W, b, name='scores')
+            self.predictions = tf.argmax(self.scores, 1, name='predictions')
 
-            # full coneection and softmax output
-            self.logits = tf.nn.softmax(tf.matmul(self.h_state, self.W) + self.b)
+        with tf.name_scope('loss'):
+            losses = tf.nn.softmax_cross_entropy_with_logits(labels=self.input_y,
+                                                             logits=self.scores)  # only named arguments accepted
+            self.loss = tf.reduce_mean(losses) + self.l2_reg_lambda * self.l2_loss
 
-    def loss_layer(self):
-        super().loss_layer()
-        cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits=self.logits, labels=self.input_y)
-        self.loss = tf.reduce_mean(cross_entropy)
-        # l2_loss = tf.add_n([tf.nn.l2_loss(v) for v in tf.trainable_variables()
-        #                     if 'bias' not in v.name]) * self.l2_reg_lambda
+        with tf.name_scope('accuracy'):
+            correct_predictions = tf.equal(self.predictions, tf.argmax(self.input_y, 1))
+            self.accuracy = tf.reduce_mean(tf.cast(correct_predictions, "float"), name='accuracy')
 
-        self.l2_loss += tf.nn.l2_loss(self.W)
-        self.l2_loss += tf.nn.l2_loss(self.b)
-        self.loss += self.l2_loss * self.l2_reg_lambda
-
-    def evaluate(self, sess, data, id_to_tag):
-        super().evaluate(sess, data, id_to_tag)
-        predicted = tf.equal(tf.argmax(self.logits, 1),
-                             tf.arg_max(self.input_y, 1))
-        self.accuracy = tf.reduce_mean(tf.cast(predicted, dtype=tf.float32))
-
-    def build_network(self):
-        super().build_network()
-        self.embedding_layer()
-        self.hidden_layer()
-        self.project_layer()
-        self.loss_layer()
-        self.evaluate()
-
-    def define_placeholder_and_variable(self):
-        super().define_placeholder_and_variable()
-
-    def run(self, sess, is_train, data):
-        super().run(sess, is_train, data)
-
-    def create_feed_dict(self, is_train, data):
-        super().create_feed_dict(is_train, data)
-
+        with tf.name_scope('num_correct'):
+            correct = tf.equal(self.predictions, tf.argmax(self.input_y, 1))
+            self.num_correct = tf.reduce_sum(tf.cast(correct, 'float'))

@@ -20,9 +20,9 @@ def split_data_and_label(corpus):
 
     tag = []
     if os.path.isfile(corpus):
-        with codecs.open(corpus, 'r') as f:
+        with codecs.open(corpus, 'r', encoding='utf-8') as f:
             for line in f:
-                tag.append(re.sub('[\xa0\n\r\t]+', '' , line))
+                tag.append(re.sub('[\xa0\n\r\t]+', '', line))
                 
     else:
         for docs in corpus:
@@ -172,4 +172,5 @@ class batch_manager(object):
         """
         input_x, input_y, self.word_index = load_data(file_path, maxlen)
         self.batches = batch_iter(list(zip(input_x, input_y)), batch_size, epochs)
+        self.length = len(input_y)
 
