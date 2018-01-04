@@ -84,7 +84,7 @@ class CNNRNNsClassification(object):
                 pad_post = tf.concat([self.pad] * num_post, 1)
                 emb_pad = tf.concat([pad_prio, emb, pad_post], 1)
 
-                filter_shape = [filter_size, self.embedding_size, 1, self.num_filters]
+                filter_shape = [filter_size, self.embedding_dim, 1, self.num_filters]
                 W = tf.Variable(tf.truncated_normal(filter_shape, stddev=0.1), name='W')
                 b = tf.Variable(tf.constant(0.1, shape=[self.num_filters]), name='b')
                 conv = tf.nn.conv2d(emb_pad, W, strides=[1, 1, 1, 1], padding='VALID', name='conv')
@@ -132,8 +132,8 @@ class CNNRNNsClassification(object):
                 output = tf.add(tf.multiply(output, mat), tf.multiply(outputs[i], 1.0 - mat))
 
         with tf.name_scope('output'):
-            self.W = tf.Variable(tf.truncated_normal([self.hidden_unit, self.num_classes], stddev=0.1), name='W')
-            b = tf.Variable(tf.constant(0.1, shape=[self.num_classes]), name='b')
+            self.W = tf.Variable(tf.truncated_normal([self.hidden_unit, self.num_tags], stddev=0.1), name='W')
+            b = tf.Variable(tf.constant(0.1, shape=[self.num_tags]), name='b')
             self.l2_loss += tf.nn.l2_loss(W)
             self.l2_loss += tf.nn.l2_loss(b)
             self.scores = tf.nn.xw_plus_b(output, self.W, b, name='scores')
@@ -145,9 +145,8 @@ class CNNRNNsClassification(object):
             self.loss = tf.reduce_mean(losses) + self.l2_reg_lambda * self.l2_loss
 
         with tf.name_scope('accuracy'):
-            correct_predictions = tf.equal(self.predictions, tf.argmax(self.input_y, 1))
-            self.accuracy = tf.reduce_mean(tf.cast(correct_predictions, "float"), name='accuracy')
+            self.correct = tf.equal(self.predictions, tf.argmax(self.input_y, 1))
+            self.accuracy = tf.reduce_mean(tf.cast(self.correct, "float"), name='accuracy')
 
         with tf.name_scope('num_correct'):
-            correct = tf.equal(self.predictions, tf.argmax(self.input_y, 1))
-            self.num_correct = tf.reduce_sum(tf.cast(correct, 'float'))
+            self.num_correct = tf.reduce_sum(tf.cast(self.correct, tf.float32), name='num_correct')

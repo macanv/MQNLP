@@ -46,7 +46,7 @@ def split_data_and_label(corpus):
 
 # ### pad sequence
 
-def pad_sequence(input_x, maxlen):
+def pad_sequence(input_x, maxlen=None):
     """
     对数据进行padding,短的进行填充，长的进行截取
     :param input_x: 
@@ -58,7 +58,7 @@ def pad_sequence(input_x, maxlen):
     maxlen = min(max_len, maxlen)
     vocab_process = learn.preprocessing.VocabularyProcessor(max_document_length=maxlen)
     input_x = np.array(list(vocab_process.fit_transform(input_x)))
-    return input_x, vocab_process.vocabulary_._mapping
+    return input_x, vocab_process#vocab_process.vocabulary_._mapping
 
 
 # ### one-hot for category
@@ -73,7 +73,7 @@ def label_one_hot(targets, nb_classes):
 
 
 # ### 加载数据，得到处理好的数据
-def load_data(file_path, maxlen):
+def load_data(file_path, maxlen=None):
     """
     加载数据
     :param file_path: 
@@ -82,13 +82,14 @@ def load_data(file_path, maxlen):
     :return: index and padding and numpy input_x, one-hot input_y, word-index mapping 
     """
     input_x, input_y = split_data_and_label(file_path)
-    input_x, words_index = pad_sequence(input_x, maxlen)
+
+    input_x, vocab_processer = pad_sequence(input_x, maxlen)
 
     label_ = set()
     [label_.add(y) for y in input_y]
     nb_class = len(label_)
     input_y = label_one_hot(input_y, nb_class)
-    return input_x, input_y, words_index
+    return input_x, input_y, vocab_processer
 
 
 # ### batch data generate
@@ -170,6 +171,16 @@ class batch_manager(object):
         :param file_path: 
         :param maxlen: 
         """
+        input_x, input_y = split_data_and_label(file_path)
+
+        input_x, words_index = pad_sequence(input_x, maxlen)
+
+        label_ = set()
+        [label_.add(y) for y in input_y]
+        nb_class = len(label_)
+        input_y = label_one_hot(input_y, nb_class)
+
+
         input_x, input_y, self.word_index = load_data(file_path, maxlen)
         self.batches = batch_iter(list(zip(input_x, input_y)), batch_size, epochs)
         self.length = len(input_y)

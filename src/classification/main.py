@@ -10,7 +10,7 @@ import os
 import pickle
 import sys
 sys.path.append("C:\workspace\python\MQNLP")
-from src.classification.data_helper import batch_manager
+from src.classification.data_helper import batch_manager, load_data, batch_iter
 from src.classification.CNNs import CNNClassification
 from src.classification.CNNRNNs import CNNRNNsClassification
 
@@ -56,8 +56,12 @@ def train_cnns():
 
     # 加载数据
     # Generate batches
-    train_manager = batch_manager(FLAGS.train_path, FLAGS.sequence_length, FLAGS.batch_size, FLAGS.num_epochs)
-    dev_manager = batch_manager(FLAGS.dev_path, FLAGS.sequence_length, FLAGS.batch_size, 1)
+    # train_manager = batch_manager(FLAGS.train_path, FLAGS.sequence_length, FLAGS.batch_size, FLAGS.num_epochs)
+    # dev_manager = batch_manager(FLAGS.dev_path, FLAGS.sequence_length, FLAGS.batch_size, 1)
+    input_x, input_y, vocab_proccesser = load_data(FLAGS.train_path, FLAGS.sequence_length)
+    train_batches = batch_iter(list(zip(input_x, input_y)), FLAGS.batch_size, FLAGS.num_epochs)
+
+    dev_x, dev_y, _ = load_data(FLAGS.dev_path, FLAGS.sequence_length)
 
     # 构建图，进行训练
     with tf.Graph().as_default():
@@ -70,7 +74,7 @@ def train_cnns():
             cnn = CNNClassification(
                 sequence_length=FLAGS.sequence_length,
                 num_tags=FLAGS.num_tags,
-                vocab_size=len(train_manager.word_index),
+                vocab_size=len(vocab_proccesser.vocabulary_),
                 embedding_size=FLAGS.embedding_dim,
                 filter_sizes=list(map(int, FLAGS.filter_sizes.split(","))),
                 num_filters=FLAGS.num_filters,
@@ -97,7 +101,7 @@ def train_cnns():
 
             # Output directory for models and summaries
             timestamp = str(int(time.time()))
-            out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs", timestamp))
+            out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs_cnn", timestamp))
             print("Writing to {}\n".format(out_dir))
 
             # Summaries for loss and accuracy
@@ -122,7 +126,7 @@ def train_cnns():
             saver = tf.train.Saver(tf.global_variables(), max_to_keep=FLAGS.num_checkpoints)
 
             # Write vocabulary
-            # vocab_processor.save(os.path.join(out_dir, "vocab"))
+            vocab_proccesser.save(os.path.join(out_dir, "vocab"))
 
             # Initialize all variables
             sess.run(tf.global_variables_initializer())
@@ -166,7 +170,7 @@ def train_cnns():
             # Training loop. For each batch...
             best_acc = 0.0
             best_step = 0
-            for batch in train_manager.batches:
+            for batch in train_batches:
                 x_batch, y_batch = zip(*batch)
                 train_step(x_batch, y_batch)
                 # 更新全局步数
@@ -174,24 +178,27 @@ def train_cnns():
                 # 计算评估结果
                 if current_step % FLAGS.evaluate_every == 0:
                     print("\nEvaluation:")
-                    correct = 0.0
-                    for batch in dev_manager.batches:
-                        x_dev, y_dev = zip(*batch)
-                        loss_, accuracy_, correct_ = dev_step(x_dev, y_dev, writer=dev_summary_writer)
-                        print(correct_)
-                        correct += correct_
-                    print(dev_manager.length)
-                    accuracy_ = correct / dev_manager.length
+                    # dev_batches = batch_iter(list(zip(dev_x, dev_y)), FLAGS.batch_size, 1)
+                    # correct = 0.0
+                    # for batch_dev in dev_batches:
+                    #     x_dev, y_dev = zip(*batch_dev)
+                    #     loss_, accuracy_, correct_ = dev_step(x_dev, y_dev, writer=dev_summary_writer)
+                    #     # print(correct_)
+                    #     correct += correct_
+                    # # print(dev_manager.length)
+                    # accuracy_ = correct / len(dev_y)
+                    loss_, accuracy_, correct_ = dev_step(dev_x, dev_y, writer=dev_summary_writer)
                     time_str = datetime.datetime.now().isoformat()
                     print("{}: acc {:g}".format(time_str, accuracy_))
                     if accuracy_ > best_acc:
                         best_acc = accuracy_
                         best_step = current_step
+                        # 保存模型计算结果
+                        path = saver.save(sess, checkpoint_prefix, global_step=current_step)
+                        print("Saved model checkpoint to {}\n".format(path))
                     print("")
-                # 保存模型计算结果
-                if current_step % FLAGS.checkpoint_every == 0:
-                    path = saver.save(sess, checkpoint_prefix, global_step=current_step)
-                    print("Saved model checkpoint to {}\n".format(path))
+
+
 
             print('\nBset dev at {}, accuray {:g}'.format(best_step, best_acc))
 
@@ -239,8 +246,12 @@ def train_cnnrnn():
 
 
     # Generate batches
-    train_manager = batch_manager(FLAGS.train_path, FLAGS.sequence_length, FLAGS.batch_size, FLAGS.num_epochs)
-    dev_manager = batch_manager(FLAGS.dev_path, FLAGS.sequence_length, 1, 1)
+    # train_manager = batch_manager(FLAGS.train_path, FLAGS.sequence_length, FLAGS.batch_size, FLAGS.num_epochs)
+    # dev_manager = batch_manager(FLAGS.dev_path, FLAGS.sequence_length, 1, 1)
+    input_x, input_y, vocab_proccesser = load_data(FLAGS.train_path, FLAGS.sequence_length)
+    train_batches = batch_iter(list(zip(input_x, input_y)), FLAGS.batch_size, FLAGS.num_epochs)
+
+    dev_x, dev_y, _ = load_data(FLAGS.dev_path, FLAGS.sequence_length)
 
     graph = tf.Graph()
     with graph.as_default():
@@ -249,7 +260,7 @@ def train_cnnrnn():
         with sess.as_default():
             cnn_rnn = CNNRNNsClassification(
                 embedding_mat=None,
-                vocab_size=len(train_manager.word_index),
+                vocab_size=len(vocab_proccesser.vocabulary_),
                 sequence_length=FLAGS.sequence_length,
                 num_tags=FLAGS.num_tags,
                 non_static=FLAGS.non_static,
@@ -281,7 +292,7 @@ def train_cnnrnn():
 
             # Output directory for models and summaries
             timestamp = str(int(time.time()))
-            out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs", timestamp))
+            out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs_cnnrnn", timestamp))
             print("Writing to {}\n".format(out_dir))
 
             # Summaries for loss and accuracy
@@ -306,7 +317,8 @@ def train_cnnrnn():
             saver = tf.train.Saver(tf.global_variables(), max_to_keep=FLAGS.num_checkpoints)
 
             # write vocabulary
-            pickle.dump(train_manager.word_index, os.path.join(out_dir, 'vocab'))
+            # pickle.dumps(word_index, open(os.path.join(out_dir, 'vocab'), 'wb'))
+            vocab_proccesser.save(os.path.join(out_dir, 'vocab'))
             # initlize all vraiables
             sess.run(tf.initialize_all_variables())
             def real_len(batches):
@@ -338,9 +350,8 @@ def train_cnnrnn():
                 }
                 step, loss, accuracy, num_correct, predictions = sess.run(
                     [global_step, cnn_rnn.loss, cnn_rnn.accuracy, cnn_rnn.num_correct, cnn_rnn.predictions], feed_dict)
-
-                time_str = datetime.datetime.now().isoformat()
-                print("{}: step {}, loss {:g}, acc {:g}".format(time_str, step, loss, accuracy))
+                # time_str = datetime.datetime.now().isoformat()
+                # print("{}: step {}, loss {:g}, acc {:g}".format(time_str, step, loss, accuracy))
                 return accuracy, loss, num_correct, predictions
 
 
@@ -349,7 +360,8 @@ def train_cnnrnn():
             best_accuracy, best_at_step = 0, 0
 
             # Train the model with x_train and y_train
-            for train_batch in train_manager:
+
+            for train_batch in train_batches:
                 x_train_batch, y_train_batch = zip(*train_batch)
                 train_step(x_train_batch, y_train_batch)
                 current_step = tf.train.global_step(sess, global_step)
@@ -357,11 +369,13 @@ def train_cnnrnn():
                 # Evaluate the model with x_dev and y_dev
                 if current_step % FLAGS.checkpoint_every == 0:
                     total_dev_correct = 0
-                    for dev_batch in dev_manager:
+                    dev_batches = batch_iter(list(zip(dev_x, dev_y)), FLAGS.batch_size, 1)
+                    for dev_batch in dev_batches:
                         x_dev_batch, y_dev_batch = zip(*dev_batch)
                         acc, loss, num_dev_correct, predictions = dev_step(x_dev_batch, y_dev_batch)
                         total_dev_correct += num_dev_correct
-                    accuracy = float(total_dev_correct) / dev_manager.length
+                        print()
+                    accuracy = float(total_dev_correct) / len(dev_y)
                     print('Accuracy on dev set: {}'.format(accuracy))
 
                     if accuracy >= best_accuracy:
@@ -373,13 +387,52 @@ def train_cnnrnn():
                         print("Saved model checkpoint to {}\n".format(path))
             print('Training is complete, testing the best model on x_test and y_test')
 
+def train_rnn():
+    # Parameters
+    # ==================================================
+
+    # Data loading params
+    tf.flags.DEFINE_float("dev_sample_percentage", .1, "Percentage of the training data to use for validation")
+    tf.flags.DEFINE_string("file_path", "thu_data_3class_3k", "Data source.")
+    tf.flags.DEFINE_integer("num_classes", 3, "number classes of datasets.")
+
+    # Model Hyperparameters
+    tf.flags.DEFINE_integer("embedding_dim", 200, "Dimensionality of character embedding (default: 128)")
+    tf.flags.DEFINE_float("dropout_keep_prob", 0.5, "Dropout keep probability (default: 0.5)")
+    tf.flags.DEFINE_integer("hidden_unit", 200, "number of RNN hidden cell")
+    tf.flags.DEFINE_string("cell", 'lstm', "Which RNN cell will be used (dedault: lstm)")
+    tf.flags.DEFINE_float("num_layer", 1, "RNN layers (default: 1)")
+    tf.flags.DEFINE_float("l2_reg_lambda", 0.0, "L2 regularization lambda (default: 0.0)")
+
+    # Training parameters
+    tf.flags.DEFINE_integer("batch_size", 32, "Batch Size (default: 64)")
+    tf.flags.DEFINE_integer("num_epochs", 100, "Number of training epochs (default: 200)")
+    tf.flags.DEFINE_integer("evaluate_every", 100, "Evaluate model on dev set after this many steps (default: 100)")
+    tf.flags.DEFINE_integer("checkpoint_every", 100, "Save model after this many steps (default: 100)")
+    tf.flags.DEFINE_integer("num_checkpoints", 5, "Number of checkpoints to store (default: 5)")
+    # Misc Parameters
+    tf.flags.DEFINE_boolean("allow_soft_placement", True, "Allow device soft device placement")
+    tf.flags.DEFINE_boolean("log_device_placement", False, "Log placement of ops on devices")
+
+    FLAGS = tf.flags.FLAGS
+    FLAGS._parse_flags()
+    print('\nParameters')
+    for attr, value in sorted(FLAGS.__flags.items()):
+        print("{}={}".format(attr.upper(), value))
+    print("")
+
 
 def main(_):
     # CNNs methods3
+
     train_cnns()
+    # train_cnnrnn()
 
 if __name__ == '__main__':
     tf.app.run()
+
+
+
 
 
 
