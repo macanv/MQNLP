@@ -148,7 +148,7 @@ def train_cnns():
 
             def dev_step(x_batch, y_batch, writer=None):
                 """
-                Evaluates model on a dev set
+                Evaluates  model on a dev set
                 """
                 feed_dict = {
                     cnn.input_x: x_batch,
