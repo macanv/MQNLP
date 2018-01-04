@@ -678,8 +678,8 @@ def train_fasttext():
 
                 time_str = datetime.datetime.now().isoformat()
                 if step % 20 == 0:
-                    print("{}: step {}, loss {:g}, acc {:g}, predicted {:g}".format(time_str, step, loss, accuracy,
-                                                                                    predicted))
+                    print("{}: step {}, loss {:g}, acc {:g}, num_correct {:g}".format(time_str, step, loss, accuracy,
+                                                                                    num_correct))
                 train_summary_writer.add_summary(summaries, step)
 
             def dev_step(x_batch, y_batch, writer=None):
@@ -694,8 +694,8 @@ def train_fasttext():
                     [global_step, dev_summary_op, ft.loss, ft.accuracy, ft.num_correct],
                     feed_dict)
                 time_str = datetime.datetime.now().isoformat()
-                print("{}: step {}, loss {:g}, acc {:g}, predicted {:g}".format(time_str, step, loss, accuracy,
-                                                                                predicted))
+                print("{}: step {}, loss {:g}, acc {:g}, num_correct {:g}".format(time_str, step, loss, accuracy,
+                                                                                num_correct))
                 if writer:
                     writer.add_summary(summaries, step)
                 return loss, accuracy, num_correct
