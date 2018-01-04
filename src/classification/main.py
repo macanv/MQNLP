@@ -13,6 +13,7 @@ sys.path.append("C:\workspace\python\MQNLP")
 from src.classification.data_helper import batch_manager, load_data, batch_iter
 from src.classification.CNNs import CNNClassification
 from src.classification.CNNRNNs import CNNRNNsClassification
+from src.classification.RNNs import RNNsClassification
 
 def train_cnns():
     """
@@ -393,8 +394,10 @@ def train_rnn():
 
     # Data loading params
     tf.flags.DEFINE_float("dev_sample_percentage", .1, "Percentage of the training data to use for validation")
-    tf.flags.DEFINE_string("file_path", "thu_data_3class_3k", "Data source.")
-    tf.flags.DEFINE_integer("num_classes", 3, "number classes of datasets.")
+    tf.flags.DEFINE_string("train_path", "thu_train", "Data source.")
+    tf.flags.DEFINE_string("dev_path", "thu_dev", "Data source.")
+    tf.flags.DEFINE_integer('sequence_length', 400, 'length of each sequence')
+    tf.flags.DEFINE_integer("num_tags", 3, "number classes of datasets.")
 
     # Model Hyperparameters
     tf.flags.DEFINE_integer("embedding_dim", 200, "Dimensionality of character embedding (default: 128)")
@@ -422,11 +425,148 @@ def train_rnn():
     print("")
 
 
+    input_x, input_y, vocab_proccesser = load_data(FLAGS.train_path, FLAGS.sequence_length)
+    train_batches = batch_iter(list(zip(input_x, input_y)), FLAGS.batch_size, FLAGS.num_epochs)
+
+    dev_x, dev_y, _ = load_data(FLAGS.dev_path, FLAGS.sequence_length)
+
+    with tf.Graph().as_default():
+        session_conf = tf.ConfigProto(
+          allow_soft_placement=FLAGS.allow_soft_placement,
+          log_device_placement=FLAGS.log_device_placement)
+        sess = tf.Session(config=session_conf)
+        with sess.as_default():
+            # 构建rnn 节点
+            rnns = RNNsClassification(
+                embedding_mat=None,
+                embedding_dims=FLAGS.embedding_dim,
+                vocab_size=len(vocab_proccesser.vocabulary_),
+                non_static=False,
+                hidden_unit=FLAGS.hidden_unit,
+                sequence_length=FLAGS.sequence_length,
+                num_tags=FLAGS.num_tags,
+                cell=FLAGS.cell,
+                num_layers=FLAGS.num_layer,
+                l2_reg_lambda=FLAGS.l2_reg_lambda)
+
+            # Define Training procedure
+            global_step = tf.Variable(0, name="global_step", trainable=False)
+            # 优化算法
+            optimizer = tf.train.AdamOptimizer(1e-3)
+            grads_and_vars = optimizer.compute_gradients(rnns.loss)
+
+            train_op = optimizer.apply_gradients(grads_and_vars, global_step=global_step)
+
+            # Keep track of gradient values and sparsity (optional)
+            grad_summaries = []
+            for g, v in grads_and_vars:
+                if g is not None:
+                    grad_hist_summary = tf.summary.histogram("{}/grad/hist".format(v.name), g)
+                    sparsity_summary = tf.summary.scalar("{}/grad/sparsity".format(v.name),
+                                                         tf.nn.zero_fraction(g))
+                    grad_summaries.append(grad_hist_summary)
+                    grad_summaries.append(sparsity_summary)
+            grad_summaries_merged = tf.summary.merge(grad_summaries)
+
+            # Output directory for models and summaries
+            timestamp = str(int(time.time()))
+            out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs_rnn", timestamp))
+            print("Writing to {}\n".format(out_dir))
+
+            # Summaries for loss and accuracy
+            loss_summary = tf.summary.scalar("loss", rnns.loss)
+            acc_summary = tf.summary.scalar("accuracy", rnns.accuracy)
+
+            # Train Summaries
+            train_summary_op = tf.summary.merge([loss_summary, acc_summary, grad_summaries_merged])
+            train_summary_dir = os.path.join(out_dir, "summaries", "train")
+            train_summary_writer = tf.summary.FileWriter(train_summary_dir, sess.graph)
+
+            # Dev summaries
+            dev_summary_op = tf.summary.merge([loss_summary, acc_summary])
+            dev_summary_dir = os.path.join(out_dir, "summaries", "dev")
+            dev_summary_writer = tf.summary.FileWriter(dev_summary_dir, sess.graph)
+
+            # Checkpoint directory. Tensorflow assumes this directory already exists so we need to create it
+            checkpoint_dir = os.path.abspath(os.path.join(out_dir, "checkpoints"))
+            checkpoint_prefix = os.path.join(checkpoint_dir, "model")
+            if not os.path.exists(checkpoint_dir):
+                os.makedirs(checkpoint_dir)
+            saver = tf.train.Saver(tf.global_variables(), max_to_keep=FLAGS.num_checkpoints)
+
+            # Write vocabulary
+            vocab_proccesser.save(os.path.join(out_dir, "vocab"))
+
+            # Initialize all variables
+            sess.run(tf.global_variables_initializer())
+
+            def train_step(x_batch, y_batch):
+                """
+                A single training step
+                """
+                feed_dict = {
+                  rnns.input_x: x_batch,
+                  rnns.input_y: y_batch,
+                  rnns.dropout_keep_prob: FLAGS.dropout_keep_prob
+                }
+                # 执行 节点操作
+                _, step, summaries, loss, accuracy = sess.run(
+                    [train_op, global_step, train_summary_op, rnns.loss, rnns.accuracy],
+                    feed_dict)
+
+                time_str = datetime.datetime.now().isoformat()
+                if step % 20 == 0:
+                    print("{}: step {}, loss {:g}, acc {:g}".format(time_str, step, loss, accuracy))
+                train_summary_writer.add_summary(summaries, step)
+
+            def dev_step(x_batch, y_batch, writer=None):
+                """
+                Evaluates model on a dev set
+                """
+                feed_dict = {
+                  rnns.input_x: x_batch,
+                  rnns.input_y: y_batch,
+                  rnns.dropout_keep_prob: 1.0
+                }
+                step, summaries, loss, accuracy = sess.run(
+                    [global_step, dev_summary_op, rnns.loss, rnns.accuracy],
+                    feed_dict)
+                # time_str = datetime.datetime.now().isoformat()
+                # print("{}: step {}, loss {:g}, acc {:g}".format(time_str, step, loss, accuracy))
+                if writer:
+                    writer.add_summary(summaries, step)
+                return loss, accuracy
+            # Generate batches
+            # batches = data_helper.batch_iter(
+            #     list(zip(x_train, y_train)), FLAGS.batch_size, FLAGS.num_epochs)
+            # Training loop. For each batch...
+            best_acc = 0.0
+            best_step = 0
+            for batch in train_batches:
+                x_batch, y_batch = zip(*batch)
+                train_step(x_batch, y_batch)
+                # 更新全局步数
+                current_step = tf.train.global_step(sess, global_step)
+                # 计算评估结果
+                if current_step % FLAGS.evaluate_every == 0:
+                    print("\nEvaluation:")
+                    loss_, accuracy_ = dev_step(dev_x, dev_y, writer=dev_summary_writer)
+                    if accuracy_ > best_acc:
+                        best_acc = accuracy_
+                        best_step = current_step
+                        # 保存模型计算结果
+                        path = saver.save(sess, checkpoint_prefix, global_step=current_step)
+                        print("Saved model checkpoint to {}\n".format(path))
+                    print("")
+
+            print('\nBset dev at {}, accuray {:g}'.format(best_step, best_acc))
+
 def main(_):
     # CNNs methods3
 
-    train_cnns()
+    # train_cnns()
     # train_cnnrnn()
+    train_rnn()
 
 if __name__ == '__main__':
     tf.app.run()

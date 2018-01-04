@@ -13,7 +13,7 @@ class RNNsClassification(basicModel):
     """
 
     def __init__(self, embedding_mat, embedding_dims, vocab_size, non_static,
-                 hidden_unit, sequence_length, num_classes, cell='lstm',
+                 hidden_unit, sequence_length, num_tags, cell='lstm',
                  num_layers=1, l2_reg_lambda=0.0):
         """
         
@@ -23,7 +23,7 @@ class RNNsClassification(basicModel):
         :param non_static: 
         :param hidden_unit: 
         :param sequence_length: 
-        :param num_classes: 
+        :param num_tags: 
         :param cell: 
         :param num_layers: 
         :param l2_reg_lambda: 
@@ -34,7 +34,7 @@ class RNNsClassification(basicModel):
         self.vocab_size = vocab_size
         self.hidden_unit = hidden_unit
         self.embedding_dims = embedding_dims
-        self.num_classes = num_classes
+        self.num_tags = num_tags
         self.cell = cell.lower()
         self.num_layer = num_layers
         self.l2_reg_lambda = l2_reg_lambda
@@ -49,7 +49,7 @@ class RNNsClassification(basicModel):
         # [样本个数，每个样本的词个数]
         self.input_x = tf.placeholder(tf.int32, [None, self.seq_length], name='input_x')
         # [样本个数， 类别个数]
-        self.input_y = tf.placeholder(tf.float32, [None, self.num_classes], name='input_y')
+        self.input_y = tf.placeholder(tf.float32, [None, self.num_tags], name='input_y')
         # dropout probability
         self.dropout_keep_prob = tf.placeholder(tf.float32, name='dropout_keep_prob')
 
@@ -120,12 +120,12 @@ class RNNsClassification(basicModel):
         # 3. FC and softmax layer
         with tf.name_scope('output'):
             if self.cell.startswith('bi'):
-                self.W = tf.Variable(tf.truncated_normal([self.hidden_unit * 2, self.num_classes], stddev=0.1),
+                self.W = tf.Variable(tf.truncated_normal([self.hidden_unit * 2, self.num_tags], stddev=0.1),
                                      dtype=tf.float32, name='W')
             else:
-                self.W = tf.Variable(tf.truncated_normal([self.hidden_unit, self.num_classes], stddev=0.1),
+                self.W = tf.Variable(tf.truncated_normal([self.hidden_unit, self.num_tags], stddev=0.1),
                                      dtype=tf.float32, name='W')
-            self.b = tf.Variable(tf.constant(0.1, shape=[self.num_classes]), dtype=tf.float32, name='b')
+            self.b = tf.Variable(tf.constant(0.1, shape=[self.num_tags]), dtype=tf.float32, name='b')
 
             # full coneection and softmax output
             self.logits = tf.nn.softmax(tf.matmul(h_state, self.W) + self.b)
