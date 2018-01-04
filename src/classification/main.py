@@ -17,7 +17,7 @@ from src.classification.CNNRNNs import CNNRNNsClassification
 def train_cnns():
     """
     训练CNNs模型用于文本分类
-    :return: 232
+    :return: 
     """
     # Parameters
     # ==================================================
