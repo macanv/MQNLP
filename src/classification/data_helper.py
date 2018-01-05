@@ -6,8 +6,8 @@ import os
 from sklearn.utils import shuffle
 from tensorflow.contrib import learn
 
-#category = ['星座', '股票', '房产', '时尚', '体育', '社会', '家居', '游戏', '彩票', '科技', '教育', '时政', '娱乐', '财经']
-category = ['体育', '股票', '科技']
+category = ['星座', '股票', '房产', '时尚', '体育', '社会', '家居', '游戏', '彩票', '科技', '教育', '时政', '娱乐', '财经']
+# category = ['体育', '股票', '科技']
 
 def split_data_and_label(corpus):
     """
@@ -31,7 +31,7 @@ def split_data_and_label(corpus):
     tag = shuffle(tag)
     for doc in tag:
         index = doc.find(' ')
-        tag= doc[:index]
+        tag = doc[:index]
         tag = re.sub('__label__', '', tag)
         try:
             i = category.index(tag)
@@ -46,7 +46,7 @@ def split_data_and_label(corpus):
 
 # ### pad sequence
 
-def pad_sequence(input_x, maxlen=None):
+def pad_sequence(input_x, maxlen=None, vocab_processer=None):
     """
     对数据进行padding,短的进行填充，长的进行截取
     :param input_x: 
@@ -56,9 +56,11 @@ def pad_sequence(input_x, maxlen=None):
     if maxlen is None:
         maxlen = max_len
     maxlen = min(max_len, maxlen)
-    vocab_process = learn.preprocessing.VocabularyProcessor(max_document_length=maxlen)
-    input_x = np.array(list(vocab_process.fit_transform(input_x)))
-    return input_x, vocab_process#vocab_process.vocabulary_._mapping
+    if vocab_processer is None:
+        vocab_processer = learn.preprocessing.VocabularyProcessor(max_document_length=maxlen)
+
+    input_x = np.array(list(vocab_processer.fit_transform(input_x)))
+    return input_x, vocab_processer#vocab_process.vocabulary_._mapping
 
 
 # ### one-hot for category

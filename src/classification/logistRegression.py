@@ -35,17 +35,21 @@ class LogisRegression(object):
 
 
 if __name__ == '__main__':
-    train_path = r'C:\workspace\python\MQNLP\src\classification\thu_train'
-    dev_path = r'C:\workspace\python\MQNLP\src\classification\thu_dev'
+    train_path = r'C:\workspace\python\MQNLP\resources\thu_train'
+    dev_path = r'C:\workspace\python\MQNLP\resources\thu_dev'
     # input_x, input_y, vocab_proccesser = load_data(train_path, 400)
     #
     # dev_x, dev_y, _ = load_data(dev_path, 400)
 
     input_x, input_y = split_data_and_label(train_path)
-    input_x, vocab_processer = pad_sequence(input_x, 400)
-
     dev_x, dev_y = split_data_and_label(dev_path)
-    dev_x, vocab_processer2 = pad_sequence(dev_x, 400)
+
+    data = input_x + dev_x
+    from tensorflow.contrib import learn
+    vocab_processer = learn.preprocessing.VocabularyProcessor(max_document_length=400).fit(data)
+
+    input_x, vocab_processer = pad_sequence(input_x, 400, vocab_processer)
+    dev_x, vocab_processer = pad_sequence(dev_x, 400, vocab_processer)
 
 
     clf = LogisticRegression(penalty='l2', C=1.0, solver='lbfgs', n_jobs=-1).fit(input_x, input_y)

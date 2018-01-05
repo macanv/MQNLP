@@ -720,16 +720,16 @@ def train_fasttext():
                         # 保存模型计算结果
                         path = saver.save(sess, checkpoint_prefix, global_step=current_step)
                         print("Saved model checkpoint to {}\n".format(path))
-                        print("")
+                    print("")
 
             print('\nBset dev at {}, accuray {:g}, predicted {:g}'.format(best_step, best_acc, predicted))
 def main(_):
     # CNNs methods3
 
-    # train_cnns()
+    train_cnns()
     # train_cnnrnn()
     # train_rnn()
-    train_fasttext()
+    # train_fasttext()
 if __name__ == '__main__':
     tf.app.run()
 
