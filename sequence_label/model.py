@@ -137,10 +137,20 @@ class Model(object):
     def project_layer(self, lstm_outputs, name=None):
         """
         hidden layer between lstm layer and logits
-        :param lstm_outputs: [batch_size, num_steps, emb_size] 
+        :param lstm_outputs: [batch_size, num_steps, emb_size*2]
         :return: [batch_size, num_steps, num_tags]
         """
-        with tf.variable_scope("project"  if not name else name):
+        with tf.variable_scope("project" if not name else name):
+            # lstm_outputs = tf.nn.tanh(lstm_outputs)
+            W = tf.get_variable('W', shape=[self.lstm_dim*2, self.num_tags],
+                                initializer=self.initializer, dtype=tf.float32)
+            b = tf.get_variable('b', shape=[self.num_tags],
+                                initializer=tf.zeros_initializer, dtype=tf.float32)
+            outputs = tf.reshape(lstm_outputs, [-1, self.lstm_dim * 2])
+            pred = tf.nn.xw_plus_b(outputs, W, b)
+            pred = tf.reshape(pred, [-1, self.num_segs, self.num_tags])
+            return pred
+
             with tf.variable_scope("hidden"):
                 W = tf.get_variable("W", shape=[self.lstm_dim*2, self.lstm_dim],
                                     dtype=tf.float32, initializer=self.initializer)
@@ -168,7 +178,7 @@ class Model(object):
         :param project_logits: [1, num_steps, num_tags]
         :return: scalar loss
         """
-        with tf.variable_scope("crf_loss"  if not name else name):
+        with tf.variable_scope("crf_loss" if not name else name):
             small = -1000.0
             # pad logits for crf loss
             start_logits = tf.concat(
@@ -197,6 +207,7 @@ class Model(object):
         :return: structured data to feed
         """
         _, chars, segs, tags = batch
+
         feed_dict = {
             self.char_inputs: np.asarray(chars),
             self.seg_inputs: np.asarray(segs),

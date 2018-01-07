@@ -20,7 +20,7 @@ def load_sentences(path, lower, zeros):
         # print(list(line))
         if not line:
             if len(sentence) > 0:
-                if 'DOCSTART' not in sentence[0][0]:
+                if 'DOCSTART' not in sentence[0][0] :
                     sentences.append(sentence)
                 sentence = []
         else:
@@ -29,7 +29,7 @@ def load_sentences(path, lower, zeros):
                 word = line.split()
                 # word[0] = " "
             else:
-                word= line.split()
+                word = line.split()
             assert len(word) >= 2, print([word[0]])
             sentence.append(word)
     if len(sentence) > 0:

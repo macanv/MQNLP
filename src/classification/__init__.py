@@ -11,7 +11,7 @@ from src.basicModel import basicModel
 
 class CNNClassification(basicModel):
     """
-    CNN 文本分类
+    CNN
     """
 
     def __init__(self, config):
