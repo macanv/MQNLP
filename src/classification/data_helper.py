@@ -5,6 +5,7 @@ import re
 import os
 from sklearn.utils import shuffle
 from tensorflow.contrib import learn
+import operator
 
 category = ['星座', '股票', '房产', '时尚', '体育', '社会', '家居', '游戏', '彩票', '科技', '教育', '时政', '娱乐', '财经']
 # category = ['体育', '股票', '科技']
@@ -52,15 +53,23 @@ def pad_sequence(input_x, maxlen=None, vocab_processer=None):
     :param input_x: 
     :return: 转化为index的语料库以及word:id的矩阵
     """
-    max_len = max([len(x.split(' ')) for x in input_x])
+    max_len = max([len(x) for x in input_x])
     if maxlen is None:
         maxlen = max_len
     maxlen = min(max_len, maxlen)
-    if vocab_processer is None:
-        vocab_processer = learn.preprocessing.VocabularyProcessor(max_document_length=maxlen)
-
-    input_x = np.array(list(vocab_processer.fit_transform(input_x)))
-    return input_x, vocab_processer#vocab_process.vocabulary_._mapping
+    rst = []
+    for line in input_x:
+        if len(line) < maxlen:
+            rst.append(line + [0] * (maxlen - len(line)))
+        else:
+            rst.append(line[:maxlen])
+    return np.asarray(rst)
+    # if vocab_processer is None:
+    #     vocab_processer = learn.preprocessing.VocabularyProcessor(max_document_length=maxlen)
+    #     vocab_processer.fit(input_x)
+    #
+    # input_x = np.array(list(vocab_processer.transform(input_x)))
+    # return np.array(input_x), vocab_processer#vocab_process.vocabulary_._mapping
 
 
 # ### one-hot for category
@@ -85,7 +94,9 @@ def load_data(file_path, maxlen=None):
     """
     input_x, input_y = split_data_and_label(file_path)
 
-    input_x, vocab_processer = pad_sequence(input_x, maxlen)
+    vocab_processer = learn.preprocessing.VocabularyProcessor(max_document_length=maxlen)
+    input_x = np.array(list(vocab_processer.fit_transform(input_x)))
+    # input_x, vocab_processer = pad_sequence(input_x, maxlen)
 
     label_ = set()
     [label_.add(y) for y in input_y]
@@ -164,6 +175,61 @@ def load_config(config_path=None):
                     config[line[0].lower()] = re.sub('[ \n]+', '', line[1])
         return config
 
+def word_index_fit(data, features):
+    """
+    将文本转化为id 格式
+    :param data: 
+    :param features: 
+    :return: 
+    """
+    term2id = {}
+    id2term = []
+    for line in data:
+        line = line.split(' ')
+        if len(line) > 1:
+            for term in line:
+                term2id[term] = term2id.get(term, 0) + 1
+    keys = sorted(term2id.keys())
+    term2id_sorted = sorted(term2id.items(), key=operator.itemgetter(1), reverse=True)
+    del term2id
+    term2id = {}
+    i = 0
+    for value in term2id_sorted:
+        if i > features:
+            break
+        term2id[i + 1] = value[0]
+        id2term.append(value[0])
+        i += 1
+    return dict(zip(term2id.values(), term2id.keys())),id2term
+
+def word_index_transform(data, term2id):
+    """
+    trans term doc to index doc using global term2id
+    :param data: 
+    :param term2id: 
+    :param id2term: 
+    :return: 
+    """
+    rst = []
+    for line in data:
+        line = line.split(' ')
+        s = []
+        if len(line) > 0:
+            for term in line:
+                s.append(term2id.get(term, 0))# += str(term2id.get(term, 0))
+            rst.append(s)
+    return np.asarray(rst)
+
+def word_index_fit_transform(data, features):
+    """
+    trans term doc to index doc
+    :param data: 
+    :param features: 
+    :return: 
+    """
+    term2id, id2term = word_index_fit(data, features)
+    rst = word_index_transform(data, term2id)
+    return rst, term2id, id2term
 
 class batch_manager(object):
 

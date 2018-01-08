@@ -12,10 +12,11 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics.scorer import make_scorer
 from sklearn import linear_model
 from sklearn import metrics
-
 from time import time
+import pickle
+from tensorflow.contrib import learn
 
-from src.classification.data_helper import load_data, split_data_and_label, pad_sequence
+from src.classification.data_helper import load_data, split_data_and_label, pad_sequence,word_index_fit, word_index_transform
 from sklearn.linear_model import LogisticRegression
 
 class LogisRegression(object):
@@ -33,29 +34,18 @@ class LogisRegression(object):
         """
         return self.tdidf.fit_transform(input_x)
 
-
 if __name__ == '__main__':
-    train_path = r'C:\workspace\python\MQNLP\resources\thu_train'
-    dev_path = r'C:\workspace\python\MQNLP\resources\thu_dev'
-    # input_x, input_y, vocab_proccesser = load_data(train_path, 400)
-    #
-    # dev_x, dev_y, _ = load_data(dev_path, 400)
+    file_path = r'C:\workspace\python\MQNLP\resources\thu_data_3k'
+    input_x, input_y, vocab_processer = load_data(file_path, 500)
+    x_train, x_dev, y_train, y_dev = train_test_split(input_x, input_y, train_size=0.6, random_state=123)
+    x_dev, x_test, y_dev, y_test = train_test_split(x_dev, y_dev, train_size=0.5, random_state=123)
+    print("Vocabulary Size: {:d}".format(len(vocab_processer.vocabulary_)))
+    print("Train/Dev split: {:d}/{:d}".format(len(y_train), len(y_dev)))
 
-    input_x, input_y = split_data_and_label(train_path)
-    dev_x, dev_y = split_data_and_label(dev_path)
-
-    data = input_x + dev_x
-    from tensorflow.contrib import learn
-    vocab_processer = learn.preprocessing.VocabularyProcessor(max_document_length=400).fit(data)
-
-    input_x, vocab_processer = pad_sequence(input_x, 400, vocab_processer)
-    dev_x, vocab_processer = pad_sequence(dev_x, 400, vocab_processer)
-
-
-    clf = LogisticRegression(penalty='l2', C=1.0, solver='lbfgs', n_jobs=-1).fit(input_x, input_y)
-    predicted = clf.predict(dev_x)
-    print(metrics.classification_report(dev_y, predicted))
-    print('accuracy_score: %0.5fs' %(metrics.accuracy_score(dev_y, predicted)))
+    pickle.dump([x_train, y_train], open('train', 'wb'))
+    pickle.dump([x_dev, y_dev], open('dev', 'wb'))
+    pickle.dump([x_test, y_test], open('test', 'wb'))
+    vocab_processer.save(os.path.join('vocab'))
 
 
 

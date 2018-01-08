@@ -24,8 +24,8 @@ def split_train_dev_test(file_path, to_file, train_size=0.6, dev_size=0.5):
             fd.write(line)
 
 if __name__ == '__main__':
-    path = r'C:\workspace\python\MQNLP\resources\thu_data_3k'
-    to_path = r'C:\workspace\python\MQNLP\resources'
+    path = r'C:\Users\Macan\Desktop\thu_data'
+    to_path = r'C:\workspace\python\MQNLP\src\classification'
 
     split_train_dev_test(path, to_path)
 
