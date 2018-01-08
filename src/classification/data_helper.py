@@ -7,8 +7,8 @@ from sklearn.utils import shuffle
 from tensorflow.contrib import learn
 import operator
 
-category = ['星座', '股票', '房产', '时尚', '体育', '社会', '家居', '游戏', '彩票', '科技', '教育', '时政', '娱乐', '财经']
-# category = ['体育', '股票', '科技']
+# category = ['星座', '股票', '房产', '时尚', '体育', '社会', '家居', '游戏', '彩票', '科技', '教育', '时政', '娱乐', '财经']
+category = ['体育', '股票', '科技']
 
 def split_data_and_label(corpus):
     """

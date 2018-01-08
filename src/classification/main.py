@@ -398,7 +398,7 @@ def train_rnn():
     tf.flags.DEFINE_float("dev_sample_percentage", .1, "Percentage of the training data to use for validation")
     tf.flags.DEFINE_string("train_path", "thu_train", "Data source.")
     tf.flags.DEFINE_string("dev_path", "thu_dev", "Data source.")
-    tf.flags.DEFINE_integer('sequence_length', 400, 'length of each sequence')
+    tf.flags.DEFINE_integer('sequence_length', 500, 'length of each sequence')
     tf.flags.DEFINE_integer("num_tags", 3, "number classes of datasets.")
 
     # Model Hyperparameters
@@ -567,7 +567,7 @@ def train_fasttext():
     tf.flags.DEFINE_float("dev_sample_percentage", .1, "Percentage of the training data to use for validation")
     tf.flags.DEFINE_string("train_path", "thu_train", "Data source.")
     tf.flags.DEFINE_string("dev_path", "thu_dev", "Data source.")
-    tf.flags.DEFINE_integer('sequence_length', 400, 'length of each sequence')
+    tf.flags.DEFINE_integer('sequence_length', 500, 'length of each sequence')
     tf.flags.DEFINE_integer("num_tags", 3, "number classes of datasets.")
 
     # Model Hyperparameters
@@ -727,10 +727,10 @@ def train_fasttext():
 def main(_):
     # CNNs methods3
 
-    train_cnns()
+    # train_cnns()
     # train_cnnrnn()
     # train_rnn()
-    # train_fasttext()
+    train_fasttext()
 if __name__ == '__main__':
     tf.app.run()
 
