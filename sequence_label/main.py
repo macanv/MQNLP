@@ -45,9 +45,9 @@ flags.DEFINE_string("config_file",  "config_file",  "File for config")
 flags.DEFINE_string("script",       "conlleval",    "evaluation script")
 flags.DEFINE_string("result_path",  "result",       "Path for results")
 flags.DEFINE_string("emb_file",     "wiki_100.utf8", "Path for pre_trained embedding")
-flags.DEFINE_string("train_file",   os.path.join("data", "example.train"),  "Path for train data")
-flags.DEFINE_string("dev_file",     os.path.join("data", "example.dev"),    "Path for dev data")
-flags.DEFINE_string("test_file",    os.path.join("data", "example.test"),   "Path for test data")
+flags.DEFINE_string("train_file",   os.path.join("data2", "example.train"),  "Path for train data")
+flags.DEFINE_string("dev_file",     os.path.join("data2", "example.dev"),    "Path for dev data")
+flags.DEFINE_string("test_file",    os.path.join("data2", "example.test"),   "Path for test data")
 
 
 FLAGS = tf.app.flags.FLAGS
@@ -108,8 +108,8 @@ def train():
     test_sentences = load_sentences(FLAGS.test_file, FLAGS.lower, FLAGS.zeros)
 
     # Use selected tagging scheme (IOB / IOBES)
-    update_tag_scheme(train_sentences, FLAGS.tag_schema)
-    update_tag_scheme(test_sentences, FLAGS.tag_schema)
+    # update_tag_scheme(train_sentences, FLAGS.tag_schema)
+    # update_tag_scheme(test_sentences, FLAGS.tag_schema)
 
     # create maps if not exist
     if not os.path.isfile(FLAGS.map_file):
@@ -131,7 +131,7 @@ def train():
         with open(FLAGS.map_file, "wb") as f:
             pickle.dump([char_to_id, id_to_char, tag_to_id, id_to_tag], f)
     else:
-        with open(FLAGS.map_file, "rb") as f:
+        with open('/Users/macan/Documents/pro/workspace/Python/MQNLP/sequence_label/maps.pkl', "rb") as f:
             char_to_id, id_to_char, tag_to_id, id_to_tag = pickle.load(f)
 
     # prepare data, get a collection of list containing index
@@ -151,41 +151,41 @@ def train():
     dev_manager = BatchManager(dev_data, 100)
     test_manager = BatchManager(test_data, 100)
     # make path for store log and model if not exist
-    make_path(FLAGS)
-    if os.path.isfile(FLAGS.config_file):
-        config = load_config(FLAGS.config_file)
-    else:
-        config = config_model(char_to_id, tag_to_id)
-        save_config(config, FLAGS.config_file)
-    make_path(FLAGS)
-
-    log_path = os.path.join("log", FLAGS.log_file)
-    logger = get_logger(log_path)
-    print_config(config, logger)
-
-    # limit GPU memory
-    tf_config = tf.ConfigProto()
-    tf_config.gpu_options.allow_growth = True
-    steps_per_epoch = train_manager.len_data
-    with tf.Session(config=tf_config) as sess:
-        model = create_model(sess, Model, FLAGS.ckpt_path, load_word2vec, config, id_to_char, logger)
-        logger.info("start training")
-        loss = []
-        for i in range(100):
-            for batch in train_manager.iter_batch(shuffle=True):
-                step, batch_loss = model.run_step(sess, True, batch)
-                loss.append(batch_loss)
-                if step % FLAGS.steps_check == 0:
-                    iteration = step // steps_per_epoch + 1
-                    logger.info("iteration:{} step:{}/{}, "
-                                "NER loss:{:>9.6f}".format(
-                        iteration, step%steps_per_epoch, steps_per_epoch, np.mean(loss)))
-                    loss = []
-
-            best = evaluate(sess, model, "dev", dev_manager, id_to_tag, logger)
-            if best:
-                save_model(sess, model, FLAGS.ckpt_path, logger)
-            evaluate(sess, model, "test", test_manager, id_to_tag, logger)
+    # make_path(FLAGS)
+    # if os.path.isfile(FLAGS.config_file):
+    #     config = load_config(FLAGS.config_file)
+    # else:
+    #     config = config_model(char_to_id, tag_to_id)
+    #     save_config(config, FLAGS.config_file)
+    # make_path(FLAGS)
+    #
+    # log_path = os.path.join("log", FLAGS.log_file)
+    # logger = get_logger(log_path)
+    # print_config(config, logger)
+    #
+    # # limit GPU memory
+    # tf_config = tf.ConfigProto()
+    # tf_config.gpu_options.allow_growth = True
+    # steps_per_epoch = train_manager.len_data
+    # with tf.Session(config=tf_config) as sess:
+    #     model = create_model(sess, Model, FLAGS.ckpt_path, load_word2vec, config, id_to_char, logger)
+    #     logger.info("start training")
+    #     loss = []
+    #     for i in range(100):
+    #         for batch in train_manager.iter_batch(shuffle=True):
+    #             step, batch_loss = model.run_step(sess, True, batch)
+    #             loss.append(batch_loss)
+    #             if step % FLAGS.steps_check == 0:
+    #                 iteration = step // steps_per_epoch + 1
+    #                 logger.info("iteration:{} step:{}/{}, "
+    #                             "NER loss:{:>9.6f}".format(
+    #                     iteration, step%steps_per_epoch, steps_per_epoch, np.mean(loss)))
+    #                 loss = []
+    #
+    #         best = evaluate(sess, model, "dev", dev_manager, id_to_tag, logger)
+    #         if best:
+    #             save_model(sess, model, FLAGS.ckpt_path, logger)
+    #         evaluate(sess, model, "test", test_manager, id_to_tag, logger)
 
 
 def evaluate_line():
