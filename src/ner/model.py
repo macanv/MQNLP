@@ -15,4 +15,10 @@ class NerModel(object):
         :param char_embedding_dim:
         :param l2_reg_lambda:
         """
-        pass
+        self.network()
+
+    def network(self):
+        """
+        BiLSTM 网络
+        :return:
+        """

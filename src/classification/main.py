@@ -20,18 +20,19 @@ from tensorflow.contrib import learn
 def train_cnns():
     """
     训练CNNs模型用于文本分类
-    :return: 
+    :return:
     """
     # Parameters
     # ==================================================
 
     # Data loading params
     tf.flags.DEFINE_float("train_size", .1, "Percentage of the training data to use for validation")
-    tf.flags.DEFINE_string("file_path", r'C:\workspace\python\MQNLP\resources\thu_data_3k', "Data source.")
-    tf.flags.DEFINE_string("dev_path", "thu_dev", "Data source.")
+    tf.flags.DEFINE_string("train_path", r'../../../dataset/train', "Data source.")
+    tf.flags.DEFINE_string("dev_path", r'../../../dataset/dev', "Data source.")
+    tf.flags.DEFINE_string('vocab_path', r'../../../dataset/vocab', 'vocabulary path')
     tf.flags.DEFINE_integer('sequence_length', 500, 'length of each sequence')
     tf.flags.DEFINE_integer("num_tags", 14, "number classes of datasets.")
-    tf.flags.DEFINE_string('out_dir', 'runs', 'output directory')
+    tf.flags.DEFINE_string('out_dir', '../../models', 'output directory')
 
     # Model Hyperparameters
     tf.flags.DEFINE_integer("embedding_dim", 200, "Dimensionality of character embedding (default: 128)")
@@ -62,9 +63,9 @@ def train_cnns():
     # train_manager = batch_manager(FLAGS.train_path, FLAGS.sequence_length, FLAGS.batch_size, FLAGS.num_epochs)
     # dev_manager = batch_manager(FLAGS.dev_path, FLAGS.sequence_length, FLAGS.batch_size, 1)
 
-    x_train, y_train = pickle.load(open('train', 'rb'))
-    x_dev, y_dev = pickle.load(open('dev', 'rb'))
-    vocab_processer = learn.preprocessing.VocabularyProcessor.restore('vocab')
+    x_train, y_train = pickle.load(open(FLAGS.train_path, 'rb'))
+    x_dev, y_dev = pickle.load(open(FLAGS.dev_path, 'rb'))
+    vocab_processer = learn.preprocessing.VocabularyProcessor.restore(FLAGS.vocab_path)
     train_batches = batch_iter(list(zip(x_train, y_train)), FLAGS.batch_size, FLAGS.num_epochs)
 
     # dev_x, dev_y, _ = load_data(FLAGS.dev_path, FLAGS.sequence_length)
@@ -107,7 +108,7 @@ def train_cnns():
 
             # Output directory for models and summaries
             timestamp = str(int(time.time()))
-            out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs_cnn", timestamp))
+            out_dir = os.path.abspath(os.path.join(FLAGS.out_dir, "runs_cnn", timestamp))
             print("Writing to {}\n".format(out_dir))
 
             # Summaries for loss and accuracy
@@ -214,10 +215,12 @@ def train_cnnrnn():
 
     # Data loading params
     tf.flags.DEFINE_float("dev_sample_percentage", .1, "Percentage of the training data to use for validation")
-    tf.flags.DEFINE_string("train_path", "thu_train", "Data source.")
-    tf.flags.DEFINE_string("dev_path", "thu_dev", "Data source.")
-    tf.flags.DEFINE_integer('sequence_length', 400, 'length of each sequence')
-    tf.flags.DEFINE_integer("num_tags", 3, "number classes of datasets.")
+    tf.flags.DEFINE_string("train_path", r'../../../dataset/train', "Data source.")
+    tf.flags.DEFINE_string("dev_path", r'../../../dataset/dev', "Data source.")
+    tf.flags.DEFINE_string('vocab_path', r'../../../dataset/vocab', 'vocabulary path')
+    tf.flags.DEFINE_integer('sequence_length', 500, 'length of each sequence')
+    tf.flags.DEFINE_integer("num_tags", 14, "number classes of datasets.")
+    tf.flags.DEFINE_string('out_dir', '../../models', 'output directory')
 
     # Model Hyperparameters
     tf.flags.DEFINE_integer("embedding_dim", 200, "Dimensionality of character embedding (default: 128)")
@@ -252,9 +255,9 @@ def train_cnnrnn():
 
 
     # Generate batches
-    x_train, y_train = pickle.load(open('train', 'rb'))
-    x_dev, y_dev = pickle.load(open('dev', 'rb'))
-    vocab_processer = learn.preprocessing.VocabularyProcessor.restore('vocab')
+    x_train, y_train = pickle.load(open(FLAGS.train_path, 'rb'))
+    x_dev, y_dev = pickle.load(open(FLAGS.dev_path, 'rb'))
+    vocab_processer = learn.preprocessing.VocabularyProcessor.restore(FLAGS.vocab_path)
     train_batches = batch_iter(list(zip(x_train, y_train)), FLAGS.batch_size, FLAGS.num_epochs)
 
     graph = tf.Graph()
@@ -296,7 +299,7 @@ def train_cnnrnn():
 
             # Output directory for models and summaries
             timestamp = str(int(time.time()))
-            out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs_cnnrnn", timestamp))
+            out_dir = os.path.abspath(os.path.join(FLAGS.out_dir, "runs_cnnrnn", timestamp))
             print("Writing to {}\n".format(out_dir))
 
             # Summaries for loss and accuracy
@@ -396,10 +399,12 @@ def train_rnn():
 
     # Data loading params
     tf.flags.DEFINE_float("dev_sample_percentage", .1, "Percentage of the training data to use for validation")
-    tf.flags.DEFINE_string("train_path", "thu_train", "Data source.")
-    tf.flags.DEFINE_string("dev_path", "thu_dev", "Data source.")
+    tf.flags.DEFINE_string("train_path", r'../../../dataset/train', "Data source.")
+    tf.flags.DEFINE_string("dev_path", r'../../../dataset/dev', "Data source.")
+    tf.flags.DEFINE_string('vocab_path', r'../../../dataset/vocab', 'vocabulary path')
     tf.flags.DEFINE_integer('sequence_length', 500, 'length of each sequence')
-    tf.flags.DEFINE_integer("num_tags", 3, "number classes of datasets.")
+    tf.flags.DEFINE_integer("num_tags", 14, "number classes of datasets.")
+    tf.flags.DEFINE_string('out_dir', '../../models', 'output directory')
 
     # Model Hyperparameters
     tf.flags.DEFINE_integer("embedding_dim", 200, "Dimensionality of character embedding (default: 128)")
@@ -426,10 +431,10 @@ def train_rnn():
         print("{}={}".format(attr.upper(), value))
     print("")
 
-    x_train, y_train = pickle.load(open('train', 'rb'))
-    x_dev, y_dev = pickle.load(open('dev', 'rb'))
-    vocab_processer = learn.preprocessing.VocabularyProcessor.restore('vocab')
-    train_batches = batch_iter(list(zip(x_train, y_train)), FLAGS.batch_size, FLAGS.num_epochs, FLAGS.sequence_length)
+    x_train, y_train = pickle.load(open(FLAGS.train_path, 'rb'))
+    x_dev, y_dev = pickle.load(open(FLAGS.dev_path, 'rb'))
+    vocab_processer = learn.preprocessing.VocabularyProcessor.restore(FLAGS.vocab_path)
+    train_batches = batch_iter(list(zip(x_train, y_train)), FLAGS.batch_size, FLAGS.num_epochs)
 
     with tf.Graph().as_default():
         session_conf = tf.ConfigProto(
@@ -471,7 +476,7 @@ def train_rnn():
 
             # Output directory for models and summaries
             timestamp = str(int(time.time()))
-            out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs_rnn", timestamp))
+            out_dir = os.path.abspath(os.path.join(FLAGS.out_dir, "runs_rnn", timestamp))
             print("Writing to {}\n".format(out_dir))
 
             # Summaries for loss and accuracy
@@ -565,10 +570,12 @@ def train_rnn():
 def train_fasttext():
     # Data loading params
     tf.flags.DEFINE_float("dev_sample_percentage", .1, "Percentage of the training data to use for validation")
-    tf.flags.DEFINE_string("train_path", "thu_train", "Data source.")
-    tf.flags.DEFINE_string("dev_path", "thu_dev", "Data source.")
+    tf.flags.DEFINE_string("train_path", r'../../../dataset/train', "Data source.")
+    tf.flags.DEFINE_string("dev_path", r'../../../dataset/dev', "Data source.")
+    tf.flags.DEFINE_string('vocab_path', r'../../../dataset/vocab', 'vocabulary path')
     tf.flags.DEFINE_integer('sequence_length', 500, 'length of each sequence')
-    tf.flags.DEFINE_integer("num_tags", 3, "number classes of datasets.")
+    tf.flags.DEFINE_integer("num_tags", 14, "number classes of datasets.")
+    tf.flags.DEFINE_string('out_dir', '../../models', 'output directory')
 
     # Model Hyperparameters
     tf.flags.DEFINE_integer("embedding_dim", 200, "Dimensionality of character embedding (default: 128)")
@@ -593,9 +600,9 @@ def train_fasttext():
         print("{}={}".format(attr.upper(), value))
     print("")
 
-    x_train, y_train = pickle.load(open('train', 'rb'))
-    x_dev, y_dev = pickle.load(open('dev', 'rb'))
-    vocab_processer = learn.preprocessing.VocabularyProcessor.restore('vocab')
+    x_train, y_train = pickle.load(open(FLAGS.train_path, 'rb'))
+    x_dev, y_dev = pickle.load(open(FLAGS.dev_path, 'rb'))
+    vocab_processer = learn.preprocessing.VocabularyProcessor.restore(FLAGS.vocab_path)
     train_batches = batch_iter(list(zip(x_train, y_train)), FLAGS.batch_size, FLAGS.num_epochs)
 
     with tf.Graph().as_default():
@@ -634,7 +641,7 @@ def train_fasttext():
 
             # Output directory for models and summaries
             timestamp = str(int(time.time()))
-            out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs_fasttext", timestamp))
+            out_dir = os.path.abspath(os.path.join(FLAGS.out_dir, "runs_fasttext", timestamp))
             print("Writing to {}\n".format(out_dir))
 
             # Summaries for loss and accuracy
@@ -727,16 +734,9 @@ def train_fasttext():
 def main(_):
     # CNNs methods3
 
-    # train_cnns()
+    train_cnns()
     # train_cnnrnn()
     # train_rnn()
-    train_fasttext()
+#     train_fasttext()
 if __name__ == '__main__':
     tf.app.run()
-
-
-
-
-
-
-
