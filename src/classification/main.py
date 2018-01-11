@@ -562,7 +562,6 @@ def train_rnn():
                         x_dev_batch, y_dev_batch = zip(*dev_batch)
                         acc, loss, num_dev_correct = dev_step(x_dev_batch, y_dev_batch)
                         total_dev_correct += num_dev_correct
-                        print('')
                     accuracy = float(total_dev_correct) / len(y_dev)
                     print('Accuracy on dev set: {}'.format(accuracy))
                     # loss_, accuracy_ = dev_step(x_dev, y_dev, writer=dev_summary_writer)
@@ -735,7 +734,6 @@ def train_fasttext():
                         x_dev_batch, y_dev_batch = zip(*dev_batch)
                         acc, loss, num_dev_correct = dev_step(x_dev_batch, y_dev_batch)
                         total_dev_correct += num_dev_correct
-                        print()
                     accuracy = float(total_dev_correct) / len(y_dev)
                     print('Accuracy on dev set: {}'.format(accuracy))
 
