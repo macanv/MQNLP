@@ -185,16 +185,16 @@ def train_cnns():
                 # 计算评估结果
                 if current_step % FLAGS.evaluate_every == 0:
                     print("\nEvaluation:")
-                    # dev_batches = batch_iter(list(zip(dev_x, dev_y)), FLAGS.batch_size, 1)
-                    # correct = 0.0
-                    # for batch_dev in dev_batches:
-                    #     x_dev, y_dev = zip(*batch_dev)
-                    #     loss_, accuracy_, correct_ = dev_step(x_dev, y_dev, writer=dev_summary_writer)
-                    #     # print(correct_)
-                    #     correct += correct_
-                    # # print(dev_manager.length)
-                    # accuracy_ = correct / len(dev_y)
-                    loss_, accuracy_, correct_ = dev_step(x_dev, y_dev, writer=dev_summary_writer)
+                    dev_batches = batch_iter(list(zip(x_dev, y_dev)), FLAGS.batch_size, 1)
+                    correct = 0.0
+                    for batch_dev in dev_batches:
+                        x_dev_batch, y_dev_batch = zip(*batch_dev)
+                        loss_, accuracy_, correct_ = dev_step(x_dev_batch, y_dev_batch, writer=dev_summary_writer)
+                        # print(correct_)
+                        correct += correct_
+                    # print(dev_manager.length)
+                    accuracy_ = correct / len(y_dev)
+                    # loss_, accuracy_, correct_ = dev_step(x_dev, y_dev, writer=dev_summary_writer)
                     time_str = datetime.datetime.now().isoformat()
                     print("{}: acc {:g}".format(time_str, accuracy_))
                     if accuracy_ > best_acc:
@@ -534,14 +534,14 @@ def train_rnn():
                   rnns.input_y: y_batch,
                   rnns.dropout_keep_prob: 1.0
                 }
-                step, summaries, loss, accuracy = sess.run(
-                    [global_step, dev_summary_op, rnns.loss, rnns.accuracy],
+                step, summaries, loss, accuracy, correct = sess.run(
+                    [global_step, dev_summary_op, rnns.loss, rnns.accuracy, rnns.num_correct],
                     feed_dict)
                 # time_str = datetime.datetime.now().isoformat()
                 # print("{}: step {}, loss {:g}, acc {:g}".format(time_str, step, loss, accuracy))
                 if writer:
                     writer.add_summary(summaries, step)
-                return loss, accuracy
+                return loss, accuracy, correct
             # Generate batches
             # batches = data_helper.batch_iter(
             #     list(zip(x_train, y_train)), FLAGS.batch_size, FLAGS.num_epochs)
@@ -556,9 +556,19 @@ def train_rnn():
                 # 计算评估结果
                 if current_step % FLAGS.evaluate_every == 0:
                     print("\nEvaluation:")
-                    loss_, accuracy_ = dev_step(x_dev, y_dev, writer=dev_summary_writer)
-                    if accuracy_ > best_acc:
-                        best_acc = accuracy_
+
+                    total_dev_correct = 0
+                    dev_batches = batch_iter(list(zip(x_dev, y_dev)), FLAGS.batch_size, 1)
+                    for dev_batch in dev_batches:
+                        x_dev_batch, y_dev_batch = zip(*dev_batch)
+                        acc, loss, num_dev_correct = dev_step(x_dev_batch, y_dev_batch)
+                        total_dev_correct += num_dev_correct
+                        print('')
+                    accuracy = float(total_dev_correct) / len(y_dev)
+                    print('Accuracy on dev set: {}'.format(accuracy))
+                    # loss_, accuracy_ = dev_step(x_dev, y_dev, writer=dev_summary_writer)
+                    if accuracy > best_acc:
+                        best_acc = accuracy
                         best_step = current_step
                         # 保存模型计算结果
                         path = saver.save(sess, checkpoint_prefix, global_step=current_step)
@@ -702,8 +712,8 @@ def train_fasttext():
                     [global_step, dev_summary_op, ft.loss, ft.accuracy, ft.num_correct],
                     feed_dict)
                 time_str = datetime.datetime.now().isoformat()
-                print("{}: step {}, loss {:g}, acc {:g}, num_correct {:g}".format(time_str, step, loss, accuracy,
-                                                                                num_correct))
+                # print("{}: step {}, loss {:g}, acc {:g}, num_correct {:g}".format(time_str, step, loss, accuracy,
+                #                                                                 num_correct))
                 if writer:
                     writer.add_summary(summaries, step)
                 return loss, accuracy, num_correct
@@ -720,10 +730,19 @@ def train_fasttext():
                 # 计算评估结果
                 if current_step % FLAGS.evaluate_every == 0:
                     print("\nEvaluation:")
-                    loss_, accuracy_, predicted_ = dev_step(x_dev, y_dev, writer=dev_summary_writer)
-                    if accuracy_ > best_acc:
-                        best_acc = accuracy_
-                        predicted = predicted_
+                    total_dev_correct = 0
+                    dev_batches = batch_iter(list(zip(x_dev, y_dev)), FLAGS.batch_size, 1)
+                    for dev_batch in dev_batches:
+                        x_dev_batch, y_dev_batch = zip(*dev_batch)
+                        acc, loss, num_dev_correct = dev_step(x_dev_batch, y_dev_batch)
+                        total_dev_correct += num_dev_correct
+                        print()
+                    accuracy = float(total_dev_correct) / len(y_dev)
+                    print('Accuracy on dev set: {}'.format(accuracy))
+
+                    # loss_, accuracy_, predicted_ = dev_step(x_dev, y_dev, writer=dev_summary_writer)
+                    if accuracy > best_acc:
+                        best_acc = accuracy
                         best_step = current_step
                         # 保存模型计算结果
                         path = saver.save(sess, checkpoint_prefix, global_step=current_step)
