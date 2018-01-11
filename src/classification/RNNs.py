@@ -143,7 +143,7 @@ class RNNsClassification(basicModel):
         # 5. accuracy
         with tf.name_scope('accuracy'):
             self.predicted = tf.equal(tf.argmax(self.logits, 1),
-                                 tf.arg_max(self.input_y, 1))
+                                 tf.argmax(self.input_y, 1))
             self.accuracy = tf.reduce_mean(tf.cast(self.predicted, dtype=tf.float32))
 
         with tf.name_scope('num_prediction'):
