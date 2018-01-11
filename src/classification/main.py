@@ -380,7 +380,6 @@ def train_cnnrnn():
                         x_dev_batch, y_dev_batch = zip(*dev_batch)
                         acc, loss, num_dev_correct, predictions = dev_step(x_dev_batch, y_dev_batch)
                         total_dev_correct += num_dev_correct
-                        print()
                     accuracy = float(total_dev_correct) / len(y_dev)
                     print('Accuracy on dev set: {}'.format(accuracy))
 
