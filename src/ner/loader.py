@@ -2,8 +2,8 @@ import os
 import re
 import codecs
 
-from sequence_label.data_utils import create_dico, create_mapping, zero_digits
-from sequence_label.data_utils import iob2, iob_iobes, get_seg_features
+from data_utils import create_dico, create_mapping, zero_digits
+from data_utils import iob2, iob_iobes, get_seg_features, get_region_features, count_start_end
 
 
 def load_sentences(path, lower, zeros):
@@ -20,7 +20,7 @@ def load_sentences(path, lower, zeros):
         # print(list(line))
         if not line:
             if len(sentence) > 0:
-                if 'DOCSTART' not in sentence[0][0] :
+                if 'DOCSTART' not in sentence[0][0] and len(sentence) > 1:
                     sentences.append(sentence)
                 sentence = []
         else:
@@ -29,10 +29,10 @@ def load_sentences(path, lower, zeros):
                 word = line.split()
                 # word[0] = " "
             else:
-                word = line.split()
+                word= line.split()
             assert len(word) >= 2, print([word[0]])
             sentence.append(word)
-    if len(sentence) > 0:
+    if len(sentence) > 1:
         if 'DOCSTART' not in sentence[0][0]:
             sentences.append(sentence)
     return sentences
@@ -101,20 +101,22 @@ def prepare_dataset(sentences, char_to_id, tag_to_id, lower=False, train=True):
     def f(x):
         return x.lower() if lower else x
     data = []
+
+    # 添加了统计信息
+    begin , end = count_start_end(sentences)
     for s in sentences:
-        # 获取char序列
         string = [w[0] for w in s]
-        # 进行char-to-id编码
         chars = [char_to_id[f(w) if f(w) in char_to_id else '<UNK>']
                  for w in string]
-        # word级别的编码
         segs = get_seg_features("".join(string))
-        #tag 编码
         if train:
             tags = [tag_to_id[w[-1]] for w in s]
         else:
             tags = [none_index for _ in chars]
-        data.append([string, chars, segs, tags])
+
+        regions_start, regions_end = get_region_features(s, begin, end)
+
+        data.append([string, chars, segs, regions_start, regions_end, tags])
 
     return data
 
@@ -130,7 +132,6 @@ def augment_with_pretrained(dictionary, ext_emb_path, chars):
     assert os.path.isfile(ext_emb_path)
 
     # Load pretrained embeddings from file
-    # 记录pretrained embeddings mat 中的words
     pretrained = set([
         line.rstrip().split()[0].strip()
         for line in codecs.open(ext_emb_path, 'r', 'utf-8')

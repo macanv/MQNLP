@@ -46,7 +46,6 @@ def iob2(tags):
     """
     Check that tags have a valid IOB format.
     Tags in IOB1 format are converted to IOB2.
-    转化为标准的IOB标注方法
     """
     for i, tag in enumerate(tags):
         if tag == 'O':
@@ -129,7 +128,6 @@ def get_seg_features(string):
     Segment text with jieba
     features are represented in bies format
     s donates single word
-    词切割特征，0表示单独成词。1表示词的开始，2表示中间，3表示结束 和BIEO标注格式一样
     """
     seg_feature = []
 
@@ -143,6 +141,53 @@ def get_seg_features(string):
             seg_feature.extend(tmp)
     return seg_feature
 
+def get_region_features(sentence, begin, end):
+    """
+    获取边界信息，这里的边界只限于实体的边界二维one-hot
+    
+    :param sentence: 
+    :param begin: 
+    :param end: 
+    :return: 
+    """
+    # todo: 添加实体前面，实体结束后的只的边界 四维one-hot
+    region_start_features = []
+    region_end_features = []
+    # 获取训练数据的统计信息
+    for terms in sentence:
+        # terms = line.split('\t')
+        if len(terms) != 2:
+            raise ValueError('line split size must equal 2')
+        if terms[0] in begin:
+            region_start_features.append(1)
+        else:
+            region_start_features.append(0)
+
+        # for end features
+        if terms[0] in end:
+            region_end_features.append(1)
+        else:
+            region_end_features.append(0)
+    return region_start_features, region_end_features
+
+def count_start_end(sentences):
+    """
+    统计单词开始和结束
+    :param sentence: 
+    :return: 
+    """
+    begin = {}
+    end = {}
+    for sentence in sentences:
+        for line in sentence:
+            if len(line) != 2:
+                raise ValueError('line len not equal 2')
+            if line[1][0] == 'B':
+               begin[line[0]] = begin.get(line[0], 0) + 1
+            elif line[1][0] == 'E':
+                end[line[0]] = end.get(line[0], 0) + 1
+
+    return begin, end
 
 def create_input(data):
     """
@@ -284,45 +329,51 @@ def input_from_line(line, char_to_id):
 class BatchManager(object):
 
     def __init__(self, data,  batch_size):
-        """
-
-        :param data: [string, chars, segs, tags]
-        :param batch_size:
-        """
-
-        # 进行pad,保证words_size 和chars_size 相等，在embedding 的时候可以进行横向拼接
         self.batch_data = self.sort_and_pad(data, batch_size)
-        #
         self.len_data = len(self.batch_data)
 
     def sort_and_pad(self, data, batch_size):
-        # 一个epoch中batch次数
         num_batch = int(math.ceil(len(data) /batch_size))
-        # 根据句子长度进行降序排序
         sorted_data = sorted(data, key=lambda x: len(x[0]))
-        # 生成每一个batch的数据
         batch_data = list()
         for i in range(num_batch):
             batch_data.append(self.pad_data(sorted_data[i*batch_size : (i+1)*batch_size]))
         return batch_data
 
-    # padding method,确保在每一个batch中的char,words,string tags 的长苏是一致的，(不需要保证所有的序列长度么？？？？)
     @staticmethod
     def pad_data(data):
         strings = []
         chars = []
         segs = []
+        regions_start = []
+        regions_end = []
         targets = []
         max_length = max([len(sentence[0]) for sentence in data])
         for line in data:
-            string, char, seg, target = line
-            #设置序列长度一致
+            string, char, seg, region_start, region_end, target = line
             padding = [0] * (max_length - len(string))
             strings.append(string + padding)
             chars.append(char + padding)
-            segs.append(seg + padding)
-            targets.append(target + padding)
-        return [strings, chars, segs, targets]
+            if len(seg) < max_length:
+                segs.append(seg + [0] * (max_length - len(seg)))
+            else:
+                segs.append(seg[:max_length])
+            if len(region_start) < max_length:
+                regions_start.append(region_start + [0] * (max_length - len(region_start)))
+            else:
+                regions_start.append(region_start[:max_length])
+
+            if len(region_end) < max_length:
+                regions_end.append(region_end + [0] * (max_length - len(region_end)))
+            else:
+                regions_end.append(region_end[:max_length])
+
+            if len(target) <= max_length:
+                targets.append(target + [0] * (max_length - len(target)))
+            else:
+                print('max_length {} target length {}'.format(max_length, len(target)))
+                raise ValueError('targets length must < max_length')
+        return [strings, chars, segs, regions_start, regions_end, targets]
 
     def iter_batch(self, shuffle=False):
         if shuffle:
