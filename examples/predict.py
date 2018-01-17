@@ -23,8 +23,8 @@ FLAGS = tf.flags.FLAGS
 FLAGS._parse_flags()
 print('\nParameters:')
 for attr, value in sorted(FLAGS.__flags.items()):
-    print('{}={}'.format(attr.upper(). value))
-print('')
+    print("{}={}".format(attr.upper(), value))
+print("")
 
 
 # load test dataset

@@ -36,7 +36,7 @@ class LogisRegression(object):
 
 if __name__ == '__main__':
     # file_path = r'C:\workspace\python\MQNLP\src\classification\thu_data'
-    # input_x, input_y, vocab_processer = load_data(file_path, 500)
+    input_x, input_y, vocab_processer = load_data(file_path, 500)
     # x_train, x_dev, y_train, y_dev = train_test_split(input_x, input_y, train_size=0.6, random_state=123)
     # x_dev, x_test, y_dev, y_test = train_test_split(x_dev, y_dev, train_size=0.5, random_state=123)
     # print("Vocabulary Size: {:d}".format(len(vocab_processer.vocabulary_)))
