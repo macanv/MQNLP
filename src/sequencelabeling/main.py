@@ -6,10 +6,11 @@ import pickle
 import itertools
 from collections import OrderedDict
 import sys
-sys.path.append('../..')
+sys.path.append('..')
 
 import tensorflow as tf
 import numpy as np
+
 from src.sequencelabeling.model import Model
 from src.sequencelabeling.loader import load_sentences, update_tag_scheme
 from src.sequencelabeling.loader import char_mapping, tag_mapping

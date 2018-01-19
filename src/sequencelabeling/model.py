@@ -56,7 +56,7 @@ class Model(object):
 
     def network(self):
         # embeddings for chinese character and segmentation representation
-        embedding = self.embedding_layer(self.char_inputs, self.seg_inputs, config)
+        embedding = self.embedding_layer(self.char_inputs, self.seg_inputs, self.config)
 
         # apply dropout before feed to lstm layer
         model_inputs = tf.nn.dropout(embedding, self.dropout)
