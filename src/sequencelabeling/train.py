@@ -40,19 +40,19 @@
 # tf.flags.DEFINE_integer("max_epoch", 100, "maximum training epochs")
 # tf.flags.DEFINE_integer("steps_check", 100, "steps per checkpoint")
 #
-# tf.flags.DEFINE_string("ckpt_path", r"../models/ner", "Path to save model")
+# tf.flags.DEFINE_string("ckpt_path", r"../../models/ner", "Path to save model")
 # tf.flags.DEFINE_string("summary_path", "summary", "Path to store summaries")
-# tf.flags.DEFINE_string("log_file", r"../models/ner/train.log", "File for log")
-# tf.flags.DEFINE_string("map_file", r"../models/ner/maps.pkl", "file for maps")
-# tf.flags.DEFINE_string("vocab_file", r"../models/ner/vocab.json", "File for vocab")
-# tf.flags.DEFINE_string("config_file", r"../models/ner/config_file", "File for config")
-# tf.flags.DEFINE_string("script", r"../../dataset/ner/conlleval", "evaluation script")
-# tf.flags.DEFINE_string("result_path", r"../models/ner/result", "Path for results")
+# tf.flags.DEFINE_string("log_file", r"../../models/ner", "File for log")
+# tf.flags.DEFINE_string("map_file", r"../../models/ner/maps.pkl", "file for maps")
+# tf.flags.DEFINE_string("vocab_file", r"../../models/ner/vocab.json", "File for vocab")
+# tf.flags.DEFINE_string("config_file", r"../../models/ner/config_file", "File for config")
+# tf.flags.DEFINE_string("script", r"../../../dataset/ner/conlleval", "evaluation script")
+# tf.flags.DEFINE_string("result_path", r"../../models/ner/result", "Path for results")
 #
-# tf.flags.DEFINE_string("emb_file", r'../../dataset/ner/wiki_100.utf8', "Path for pre_trained embedding")
-# tf.flags.DEFINE_string("train_file", r'../../dataset/ner/example.train', "Path for train data")
-# tf.flags.DEFINE_string("dev_file", r'../../dataset/ner/example.dev', "Path for dev data")
-# tf.flags.DEFINE_string("test_file", r'../../dataset/ner/example.test', "Path for test data")
+# tf.flags.DEFINE_string("emb_file", r'/home/dmml1/git/dataset/ner/wiki_100.utf8', "Path for pre_trained embedding")
+# tf.flags.DEFINE_string("train_file", r'/home/dmml1/git/dataset/ner/example.train', "Path for train data")
+# tf.flags.DEFINE_string("dev_file", r'/home/dmml1/git/dataset/ner/example.dev', "Path for dev data")
+# tf.flags.DEFINE_string("test_file", r'/home/dmml1/git/dataset/ner/example.test', "Path for test data")
 #
 # tf.flags.DEFINE_string("model_type", "bilstm", "Model type, can be idcnn or bilstm")
 #
@@ -163,14 +163,9 @@
 #     test_manager = BatchManager(test_data, 100)
 #     # make path for store log and model if not exist
 #     make_path(FLAGS)
-#     if os.path.isfile(FLAGS.config_file):
-#         config = load_config(FLAGS.config_file)
-#     else:
-#         config = config_model(char_to_id, tag_to_id)
-#         save_config(config, FLAGS.config_file)
-#     make_path(FLAGS)
+#     config = config_model(char_to_id, tag_to_id)
 #
-#     log_path = os.path.join("log", FLAGS.log_file)
+#     log_path = os.path.join(FLAGS.log_file, "log")
 #     logger = get_logger(log_path)
 #     print_config(config, logger)
 #
