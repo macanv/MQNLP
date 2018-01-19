@@ -10,7 +10,8 @@ from src.classification.data_helper import batch_manager, load_data, batch_iter
 
 
 # parameters for evaluate
-tf.flags.DEFINE_string('model_path', '../../models/runs_cnn', 'path of model')
+"""todo:修改这里的xxx为对应的目录"""
+tf.flags.DEFINE_string('model_path', '../models/runs_cnn/xxx/checkpoints', 'path of model')
 tf.flags.DEFINE_string('vocab_path', '../../../dataset/vocab', 'path of vocabulary')
 tf.flags.DEFINE_string('test_path', '../../../dataset/test', 'path of test data')
 tf.flags.DEFINE_integer("batch_size", '64', 'Batch size (default:64)')
