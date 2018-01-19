@@ -5,8 +5,6 @@ import logging
 import codecs
 
 import tensorflow as tf
-import sys
-sys.path.append('../..')
 from src.sequencelabeling.conlleval import return_report
 
 models_path = "./models"
