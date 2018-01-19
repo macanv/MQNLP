@@ -1,19 +1,22 @@
 # encoding=utf8
+
 import os
 import codecs
 import pickle
 import itertools
 from collections import OrderedDict
+import sys
+sys.path.append('../..')
 
 import tensorflow as tf
 import numpy as np
-from model import Model
-from loader import load_sentences, update_tag_scheme
-from loader import char_mapping, tag_mapping
-from loader import augment_with_pretrained, prepare_dataset
-from utils import get_logger, make_path, clean, create_model, save_model
-from utils import print_config, save_config, load_config, test_ner
-from data_utils import load_word2vec, create_input, input_from_line, BatchManager
+from src.sequencelabeling.model import Model
+from src.sequencelabeling.loader import load_sentences, update_tag_scheme
+from src.sequencelabeling.loader import char_mapping, tag_mapping
+from src.sequencelabeling.loader import augment_with_pretrained, prepare_dataset
+from src.sequencelabeling.utils import get_logger, make_path, clean, create_model, save_model
+from src.sequencelabeling.utils import print_config, save_config, load_config, test_ner
+from src.sequencelabeling.data_utils import load_word2vec, input_from_line, BatchManager
 
 flags = tf.app.flags
 flags.DEFINE_boolean("clean",       True,      "clean train folder")
@@ -22,11 +25,9 @@ flags.DEFINE_boolean("train",       True,      "Whether train the model")
 flags.DEFINE_integer("seg_dim",     20,         "Embedding size for segmentation, 0 if not used")
 flags.DEFINE_integer("char_dim",    100,        "Embedding size for characters")
 flags.DEFINE_integer("lstm_dim",    100,        "Num of hidden units in LSTM, or num of filters in IDCNN")
-flags.DEFINE_integer("region_dim",    5,  "Embedding size for region")
 flags.DEFINE_string("tag_schema",   "iobes",    "tagging schema iobes or iob")
-
-flags.DEFINE_integer("num_regions",    2,        "Number of regions")
 flags.DEFINE_integer("num_segs",    4,        "Number of sges")
+
 # configurations for training
 flags.DEFINE_float("clip",          5,          "Gradient clip")
 flags.DEFINE_float("dropout",       0.5,        "Dropout rate")
@@ -47,10 +48,11 @@ flags.DEFINE_string("vocab_file",   "vocab.json",   "File for vocab")
 flags.DEFINE_string("config_file",  "config_file",  "File for config")
 flags.DEFINE_string("script",       "conlleval",    "evaluation script")
 flags.DEFINE_string("result_path",  "result",       "Path for results")
+
 flags.DEFINE_string("emb_file",     os.path.join("data", "vec.txt"),  "Path for pre_trained embedding")
-flags.DEFINE_string("train_file",   os.path.join("data2", "example.train"),  "Path for train data")
-flags.DEFINE_string("dev_file",     os.path.join("data2", "example.dev"),    "Path for dev data")
-flags.DEFINE_string("test_file",    os.path.join("data2", "example.test"),   "Path for test data")
+flags.DEFINE_string("train_file",   os.path.join("data", "ner.train"),  "Path for train data")
+flags.DEFINE_string("dev_file",     os.path.join("data", "ner.dev"),    "Path for dev data")
+flags.DEFINE_string("test_file",    os.path.join("data", "ner.test"),   "Path for test data")
 
 #flags.DEFINE_string("model_type", "idcnn", "Model type, can be idcnn or bilstm")
 flags.DEFINE_string("model_type", "bilstm", "Model type, can be idcnn or bilstm")
@@ -70,11 +72,7 @@ def config_model(char_to_id, tag_to_id):
     config["char_dim"] = FLAGS.char_dim
     config["num_tags"] = len(tag_to_id)
     config["seg_dim"] = FLAGS.seg_dim
-    config["region_dim"] = FLAGS.region_dim
-    
     config["num_segs"] = FLAGS.num_segs
-    config["num_regions"] = FLAGS.num_regions
-    
     config["lstm_dim"] = FLAGS.lstm_dim
     config["batch_size"] = FLAGS.batch_size
 
@@ -96,8 +94,10 @@ def evaluate(sess, model, name, data, id_to_tag, logger):
     eval_lines = test_ner(ner_results, FLAGS.result_path)
     for line in eval_lines:
         logger.info(line)
+    # 获取F1值
     f1 = float(eval_lines[1].strip().split()[-1])
 
+    # 输出最好结果
     if name == "dev":
         best_test_f1 = model.best_dev_f1.eval()
         if f1 > best_test_f1:
@@ -119,10 +119,11 @@ def train():
     test_sentences = load_sentences(FLAGS.test_file, FLAGS.lower, FLAGS.zeros)
 
     # Use selected tagging scheme (IOB / IOBES)
-    #update_tag_scheme(train_sentences, FLAGS.tag_schema)
-    #update_tag_scheme(test_sentences, FLAGS.tag_schema)
+    if FLAGS.tag_schema == 'iob':
+        update_tag_scheme(train_sentences, FLAGS.tag_schema)
+        update_tag_scheme(test_sentences, FLAGS.tag_schema)
 
-    # create maps if not exist
+    # create maps if not exist  创建index-term 映射表，如果存在则加载，否则创建
     if not os.path.isfile(FLAGS.map_file):
         # create dictionary for word
         if FLAGS.pre_emb:
@@ -221,16 +222,13 @@ def evaluate_line():
                 result = model.evaluate_line(sess, input_from_line(line, char_to_id), id_to_tag)
                 print(result)
 
-
 def main(_):
-
     if FLAGS.train:
         if FLAGS.clean:
             clean(FLAGS)
         train()
     else:
         evaluate_line()
-
 
 if __name__ == "__main__":
     tf.app.run(main)

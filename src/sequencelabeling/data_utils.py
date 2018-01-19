@@ -233,7 +233,7 @@ def load_word2vec(emb_path, id_to_word, word_dim, old_weights):
         elif word.lower() in pre_trained:
             new_weights[i] = pre_trained[word.lower()]
             c_lower += 1
-        elif re.sub('\d', '0', word.lower()) in pre_trained:
+        elif re.sub('\d', '0', word.lower()) in pre_trained: # 如果单词不在词向量中，使用0填充
             new_weights[i] = pre_trained[
                 re.sub('\d', '0', word.lower())
             ]
@@ -345,8 +345,6 @@ class BatchManager(object):
         strings = []
         chars = []
         segs = []
-        regions_start = []
-        regions_end = []
         targets = []
         max_length = max([len(sentence[0]) for sentence in data])
         for line in data:
@@ -358,22 +356,13 @@ class BatchManager(object):
                 segs.append(seg + [0] * (max_length - len(seg)))
             else:
                 segs.append(seg[:max_length])
-            if len(region_start) < max_length:
-                regions_start.append(region_start + [0] * (max_length - len(region_start)))
-            else:
-                regions_start.append(region_start[:max_length])
-
-            if len(region_end) < max_length:
-                regions_end.append(region_end + [0] * (max_length - len(region_end)))
-            else:
-                regions_end.append(region_end[:max_length])
 
             if len(target) <= max_length:
                 targets.append(target + [0] * (max_length - len(target)))
             else:
                 print('max_length {} target length {}'.format(max_length, len(target)))
                 raise ValueError('targets length must < max_length')
-        return [strings, chars, segs, regions_start, regions_end, targets]
+        return [strings, chars, segs, targets]
 
     def iter_batch(self, shuffle=False):
         if shuffle:

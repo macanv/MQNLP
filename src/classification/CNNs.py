@@ -121,7 +121,7 @@ class CNNClassification(object):
             # using softmax to normolize output
             # self.scores = tf.nn.softmax(logits=self.scores)
             # 以概率最大，获得每个样本 的类别
-            self.predictions = tf.argmax(self.scores, 1, name='predictons')
+            self.predictions = tf.argmax(self.scores, 1, name='predictions')
 
         # 计算损失
         with tf.name_scope('loss'):

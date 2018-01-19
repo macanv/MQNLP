@@ -1,9 +1,10 @@
 import os
 import re
 import codecs
-
-from data_utils import create_dico, create_mapping, zero_digits
-from data_utils import iob2, iob_iobes, get_seg_features, get_region_features, count_start_end
+import sys
+sys.path.append('../..')
+from src.sequencelabeling.data_utils import create_dico, create_mapping, zero_digits
+from src.sequencelabeling.data_utils import iob2, iob_iobes, get_seg_features, get_region_features, count_start_end
 
 
 def load_sentences(path, lower, zeros):

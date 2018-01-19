@@ -2,9 +2,12 @@ import os
 import json
 import shutil
 import logging
+import codecs
 
 import tensorflow as tf
-from conlleval import return_report
+import sys
+sys.path.append('../..')
+from src.sequencelabeling.conlleval import return_report
 
 models_path = "./models"
 eval_path = "./evaluation"
@@ -55,7 +58,7 @@ def test_ner(results, path):
     Run perl script to evaluate model
     """
     output_file = os.path.join(path, "ner_predict.utf8")
-    with open(output_file, "w") as f:
+    with codecs.open(output_file, "w", encoding='utf-8') as f:
         to_write = []
         for block in results:
             for line in block:
@@ -63,6 +66,7 @@ def test_ner(results, path):
             to_write.append("\n")
 
         f.writelines(to_write)
+    # 调用perl 脚本，计算得分
     eval_lines = return_report(output_file)
     return eval_lines
 

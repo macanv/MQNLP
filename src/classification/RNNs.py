@@ -53,8 +53,6 @@ class RNNsClassification(basicModel):
         # dropout probability
         self.dropout_keep_prob = tf.placeholder(tf.float32, name='dropout_keep_prob')
 
-
-
         self.network()
 
     def witch_cell(self):
