@@ -15,10 +15,10 @@
 # from src.sequencelabeling.loader import char_mapping, tag_mapping
 # from src.sequencelabeling.loader import augment_with_pretrained, prepare_dataset
 # from src.sequencelabeling.utils import get_logger, make_path, create_model, save_model
-# from src.sequencelabeling.utils import print_config, save_config, load_config, test_ner
+# from src.sequencelabeling.utils import print_config, save_config, clean, load_config, test_ner
 # from src.sequencelabeling.data_utils import load_word2vec, input_from_line, BatchManager
 #
-# tf.flags.DEFINE_boolean("clean", True, "clean train folder")
+# tf.flags.DEFINE_boolean("clean", False, "clean train folder")
 # tf.flags.DEFINE_boolean("train", True, "Whether train the model")
 # # configurations for the model
 # tf.flags.DEFINE_integer("seg_dim", 20, "Embedding size for segmentation, 0 if not used")
@@ -40,19 +40,18 @@
 # tf.flags.DEFINE_integer("max_epoch", 100, "maximum training epochs")
 # tf.flags.DEFINE_integer("steps_check", 100, "steps per checkpoint")
 #
-# tf.flags.DEFINE_string("ckpt_path", r"../../models/ner", "Path to save model")
+# tf.flags.DEFINE_string("ckpt_path", r"../../models/pos", "Path to save model")
 # tf.flags.DEFINE_string("summary_path", "summary", "Path to store summaries")
-# tf.flags.DEFINE_string("log_file", r"../../models/ner", "File for log")
-# tf.flags.DEFINE_string("map_file", r"../../models/ner/maps.pkl", "file for maps")
-# tf.flags.DEFINE_string("vocab_file", r"../../models/ner/vocab.json", "File for vocab")
-# tf.flags.DEFINE_string("config_file", r"../../models/ner/config_file", "File for config")
-# tf.flags.DEFINE_string("script", r"../../../dataset/ner/conlleval", "evaluation script")
-# tf.flags.DEFINE_string("result_path", r"../../models/ner/result", "Path for results")
+# tf.flags.DEFINE_string("log_file", r"../../models/pos", "File for log")
+# tf.flags.DEFINE_string("map_file", r"../../models/pos/maps.pkl", "file for maps")
+# tf.flags.DEFINE_string("vocab_file", r"../../models/pos/vocab.json", "File for vocab")
+# tf.flags.DEFINE_string("config_file", r"../../models/pos/config_file", "File for config")
+# tf.flags.DEFINE_string("result_path", r"../../models/pos/result", "Path for results")
 #
-# tf.flags.DEFINE_string("emb_file", r'/home/dmml1/git/dataset/ner/wiki_100.utf8', "Path for pre_trained embedding")
-# tf.flags.DEFINE_string("train_file", r'/home/dmml1/git/dataset/ner/example.train', "Path for train data")
-# tf.flags.DEFINE_string("dev_file", r'/home/dmml1/git/dataset/ner/example.dev', "Path for dev data")
-# tf.flags.DEFINE_string("test_file", r'/home/dmml1/git/dataset/ner/example.test', "Path for test data")
+# tf.flags.DEFINE_string("emb_file", r'../../../dataset/wiki_100.utf8', "Path for pre_trained embedding")
+# tf.flags.DEFINE_string("train_file", r'../../../dataset/pos/pos.train', "Path for train data")
+# tf.flags.DEFINE_string("dev_file", r'../../../dataset/pos/pos.dev', "Path for dev data")
+# tf.flags.DEFINE_string("test_file", r'../../../dataset/pos/pos.test', "Path for test data")
 #
 # tf.flags.DEFINE_string("model_type", "bilstm", "Model type, can be idcnn or bilstm")
 #
@@ -130,12 +129,13 @@
 #             dico_chars, char_to_id, id_to_char = augment_with_pretrained(dico_chars_train.copy(),
 #                                                                          FLAGS.emb_file,
 #                                                                          list(itertools.chain.from_iterable(
-#                                                                              [[w[0] for w in s] for s in test_sentences])))
+#                                                                              [[w[0] for w in s] for s in test_sentences + dev_sentences])))
 #         else:
 #             _c, char_to_id, id_to_char = char_mapping(train_sentences, FLAGS.lower)
 #
 #         # Create a dictionary and a mapping for tags
-#         _t, tag_to_id, id_to_tag = tag_mapping(train_sentences)
+#         _t, tag_to_id, id_to_tag = tag_mapping(train_sentences + dev_sentences + test_sentences)
+#         # os.mkdir()
 #         with open(FLAGS.map_file, "wb") as f:
 #             pickle.dump([char_to_id, id_to_char, tag_to_id, id_to_tag], f)
 #     else:
@@ -215,13 +215,13 @@
 #
 #
 # def main(_):
-#     train()
-#     # if FLAGS.train:
-#     #     # if FLAGS.clean:
-#     #     #     clean(FLAGS)
-#     #     train()
-#     # else:
-#     #     evaluate_line()
+#     # train()
+#     if FLAGS.train:
+#         if FLAGS.clean:
+#             clean(FLAGS)
+#         train()
+#     else:
+#         evaluate_line()
 #
 #
 # if __name__ == "__main__":

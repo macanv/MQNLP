@@ -247,7 +247,7 @@ class Model(object):
         trans = self.trans.eval()
         for batch in data_manager.iter_batch():
             strings = batch[0]
-            print(strings)
+            # print(strings)
             tags = batch[-1]
             # 扔到模型中去跑，序列的真实长度和logits
             lengths, scores = self.run_step(sess, False, batch)

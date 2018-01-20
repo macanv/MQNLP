@@ -2,7 +2,7 @@ import os
 import re
 import codecs
 from src.sequencelabeling.data_utils import create_dico, create_mapping, zero_digits
-from src.sequencelabeling.data_utils import iob2, iob_iobes, get_seg_features, get_region_features, count_start_end
+from src.sequencelabeling.data_utils import iob2, iob_iobes, get_seg_features, get_region_features
 
 
 def load_sentences(path, lower, zeros):
@@ -101,8 +101,6 @@ def prepare_dataset(sentences, char_to_id, tag_to_id, lower=False, train=True):
         return x.lower() if lower else x
     data = []
 
-    # 添加了统计信息
-    begin, end = count_start_end(sentences)
     for s in sentences:
         string = [w[0] for w in s]
         chars = [char_to_id[f(w) if f(w) in char_to_id else '<UNK>']
@@ -115,9 +113,8 @@ def prepare_dataset(sentences, char_to_id, tag_to_id, lower=False, train=True):
         else:
             tags = [none_index for _ in chars]
 
-        regions_start, regions_end = get_region_features(s, begin, end)
 
-        data.append([string, chars, segs, regions_start, regions_end, tags])
+        data.append([string, chars, segs, tags])
 
     return data
 

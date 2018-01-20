@@ -170,24 +170,6 @@ def get_region_features(sentence, begin, end):
             region_end_features.append(0)
     return region_start_features, region_end_features
 
-def count_start_end(sentences):
-    """
-    统计单词开始和结束
-    :param sentence: 
-    :return: 
-    """
-    begin = {}
-    end = {}
-    for sentence in sentences:
-        for line in sentence:
-            if len(line) != 2:
-                raise ValueError('line len not equal 2')
-            if line[1][0] == 'B':
-               begin[line[0]] = begin.get(line[0], 0) + 1
-            elif line[1][0] == 'E':
-                end[line[0]] = end.get(line[0], 0) + 1
-
-    return begin, end
 
 def create_input(data):
     """
@@ -348,7 +330,7 @@ class BatchManager(object):
         targets = []
         max_length = max([len(sentence[0]) for sentence in data])
         for line in data:
-            string, char, seg, region_start, region_end, target = line
+            string, char, seg, target = line
             padding = [0] * (max_length - len(string))
             strings.append(string + padding)
             chars.append(char + padding)
