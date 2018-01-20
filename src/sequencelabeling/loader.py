@@ -95,20 +95,22 @@ def prepare_dataset(sentences, char_to_id, tag_to_id, lower=False, train=True):
         - tag indexes
     """
 
-    none_index = tag_to_id["O"]
+    none_index = tag_to_id.get('O', 'O')
 
     def f(x):
         return x.lower() if lower else x
     data = []
 
     # 添加了统计信息
-    begin , end = count_start_end(sentences)
+    begin, end = count_start_end(sentences)
     for s in sentences:
         string = [w[0] for w in s]
         chars = [char_to_id[f(w) if f(w) in char_to_id else '<UNK>']
                  for w in string]
         segs = get_seg_features("".join(string))
         if train:
+            # 将tag 转化为id形式，如果当前tag不在map中，那么添加进去
+            # if w[-1] in tag_to_id:
             tags = [tag_to_id[w[-1]] for w in s]
         else:
             tags = [none_index for _ in chars]

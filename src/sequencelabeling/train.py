@@ -127,13 +127,10 @@
 #         # create dictionary for word
 #         if FLAGS.pre_emb:
 #             dico_chars_train = char_mapping(train_sentences, FLAGS.lower)[0]
-#             dico_chars, char_to_id, id_to_char = augment_with_pretrained(
-#                 dico_chars_train.copy(),
-#                 FLAGS.emb_file,
-#                 list(itertools.chain.from_iterable(
-#                     [[w[0] for w in s] for s in test_sentences])
-#                 )
-#             )
+#             dico_chars, char_to_id, id_to_char = augment_with_pretrained(dico_chars_train.copy(),
+#                                                                          FLAGS.emb_file,
+#                                                                          list(itertools.chain.from_iterable(
+#                                                                              [[w[0] for w in s] for s in test_sentences])))
 #         else:
 #             _c, char_to_id, id_to_char = char_mapping(train_sentences, FLAGS.lower)
 #
