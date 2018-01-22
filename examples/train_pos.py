@@ -5,11 +5,11 @@ import codecs
 import pickle
 import itertools
 from collections import OrderedDict
-import sys
-sys.path.append('..')
-
 import tensorflow as tf
 import numpy as np
+
+import sys
+sys.path.append('..')
 from src.sequencelabeling.model import Model
 from src.sequencelabeling.loader import load_sentences, update_tag_scheme
 from src.sequencelabeling.loader import char_mapping, tag_mapping
@@ -30,7 +30,7 @@ flags.DEFINE_integer("num_segs",    4,        "Number of sges")
 # configurations for training
 flags.DEFINE_float("clip",          5,          "Gradient clip")
 flags.DEFINE_float("dropout",       0.5,        "Dropout rate")
-flags.DEFINE_float("batch_size",    100,         "batch size")
+flags.DEFINE_float("batch_size",    20,         "batch size")
 flags.DEFINE_float("lr",            0.001,      "Initial learning rate")
 flags.DEFINE_string("optimizer",    "adam",     "Optimizer for training")
 flags.DEFINE_boolean("pre_emb",     True,       "Wither use pre-trained embedding")
@@ -39,19 +39,18 @@ flags.DEFINE_boolean("lower",       True,       "Wither lower case")
 
 flags.DEFINE_integer("max_epoch",   100,        "maximum training epochs")
 flags.DEFINE_integer("steps_check", 100,        "steps per checkpoint")
-flags.DEFINE_string("ckpt_path",    r"../models/seg",      "Path to save model")
+flags.DEFINE_string("ckpt_path",    r"../models/pos",      "Path to save model")
 flags.DEFINE_string("summary_path", "summary",      "Path to store summaries")
-flags.DEFINE_string("log_file",     r"../models/seg/train.log",    "File for log")
-flags.DEFINE_string("map_file",     r"../models/seg/maps.pkl",     "file for maps")
-flags.DEFINE_string("vocab_file",   r"../models/seg/vocab.json",   "File for vocab")
-flags.DEFINE_string("config_file",  r"../models/seg/config_file",  "File for config")
-flags.DEFINE_string("script",       r"../../dataset/seg/conlleval",    "evaluation script")
-flags.DEFINE_string("result_path",  r"../models/seg/result",       "Path for results")
+flags.DEFINE_string("log_file",     r"../models/pos/train.log",    "File for log")
+flags.DEFINE_string("map_file",     r"../models/pos/maps.pkl",     "file for maps")
+flags.DEFINE_string("vocab_file",   r"../models/pos/vocab.json",   "File for vocab")
+flags.DEFINE_string("config_file",  r"../models/pos/config_file",  "File for config")
+flags.DEFINE_string("result_path",  r"../models/pos/result",       "Path for results")
 
 flags.DEFINE_string("emb_file", r'../../dataset/wiki_100.utf8',  "Path for pre_trained embedding")
-flags.DEFINE_string("train_file", r'../../dataset/seg/seg.train',  "Path for train data")
-flags.DEFINE_string("dev_file", r'../../dataset/seg/seg.dev',    "Path for dev data")
-flags.DEFINE_string("test_file", r'../../dataset/seg/seg.test',   "Path for test data")
+flags.DEFINE_string("train_file", r'../../dataset/pos/pos.train',  "Path for train data")
+flags.DEFINE_string("dev_file", r'../../dataset/pos/pos.dev',    "Path for dev data")
+flags.DEFINE_string("test_file", r'../../dataset/pos/pos.test',   "Path for test data")
 
 #flags.DEFINE_string("model_type", "idcnn", "Model type, can be idcnn or bilstm")
 flags.DEFINE_string("model_type", "bilstm", "Model type, can be idcnn or bilstm")
@@ -122,7 +121,7 @@ def train():
         update_tag_scheme(test_sentences, FLAGS.tag_schema)
 
     # create maps if not exist  创建index-term 映射表，如果存在则加载，否则创建
-    if not os.path.exists(FLAGS.map_file):
+    if not os.path.isfile(FLAGS.map_file):
         # create dictionary for word
         if FLAGS.pre_emb:
             dico_chars_train = char_mapping(train_sentences + dev_sentences, FLAGS.lower)[0]
@@ -162,14 +161,9 @@ def train():
     test_manager = BatchManager(test_data, 100)
     # make path for store log and model if not exist
     make_path(FLAGS)
-    if os.path.isfile(FLAGS.config_file):
-        config = load_config(FLAGS.config_file)
-    else:
-        config = config_model(char_to_id, tag_to_id)
-        save_config(config, FLAGS.config_file)
-    make_path(FLAGS)
+    config = config_model(char_to_id, tag_to_id)
 
-    log_path = FLAGS.log_file
+    log_path = os.path.join(FLAGS.log_file, "log")
     logger = get_logger(log_path)
     print_config(config, logger)
 
@@ -189,7 +183,7 @@ def train():
                     iteration = step // steps_per_epoch + 1
                     logger.info("iteration:{} step:{}/{}, "
                                 "NER loss:{:>9.6f}".format(
-                        iteration, step%steps_per_epoch, steps_per_epoch, np.mean(loss)))
+                        iteration, step % steps_per_epoch, steps_per_epoch, np.mean(loss)))
                     loss = []
 
             best = evaluate(sess, model, "dev", dev_manager, id_to_tag, logger)
@@ -209,24 +203,13 @@ def evaluate_line():
     with tf.Session(config=tf_config) as sess:
         model = create_model(sess, Model, FLAGS.ckpt_path, load_word2vec, config, id_to_char, logger)
         while True:
-            # try:
-            #     line = input("请输入测试句子:")
-            #     result = model.evaluate_line(sess, input_from_line(line, char_to_id), id_to_tag)
-            #     print(result)
-            # except Exception as e:
-            #     logger.info(e)
+            line = input("请输入测试句子:")
+            result = model.evaluate_line(sess, input_from_line(line, char_to_id), id_to_tag)
+            print(result)
 
-                line = input("请输入测试句子:")
-                result = model.evaluate_line(sess, input_from_line(line, char_to_id), id_to_tag)
-                print(result)
 
 def main(_):
-    if FLAGS.train:
-        # if FLAGS.clean:
-        #     clean(FLAGS)
-        train()
-    else:
-        evaluate_line()
+    train()
 
 if __name__ == "__main__":
-    tf.app.run(main)
+    tf.app.run()
