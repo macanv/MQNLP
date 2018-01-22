@@ -6,6 +6,10 @@ import re
 import os
 from _collections import defaultdict
 
+
+"""
+ 来自http://kexue.fm
+"""
 class Find_Words(object):
     def __init__(self, min_count=10, min_prob=1.0):
         """

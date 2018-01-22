@@ -257,8 +257,10 @@ class Model(object):
             for i in range(len(strings)):
                 result = []
                 string = strings[i][:lengths[i]]
-                gold = iobes_iob([id_to_tag[int(x)] for x in tags[i][:lengths[i]]])
-                pred = iobes_iob([id_to_tag[int(x)] for x in batch_paths[i][:lengths[i]]])
+                # gold = iobes_iob([id_to_tag[int(x)] for x in tags[i][:lengths[i]]])
+                # pred = iobes_iob([id_to_tag[int(x)] for x in batch_paths[i][:lengths[i]]])
+                gold = [id_to_tag[int(x)] for x in tags[i][:lengths[i]]]
+                pred = [id_to_tag[int(x)] for x in batch_paths[i][:lengths[i]]]
                 for char, gold, pred in zip(string, gold, pred):
                     result.append(" ".join([char, gold, pred]))
                 results.append(result)

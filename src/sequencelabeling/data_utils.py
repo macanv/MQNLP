@@ -106,7 +106,7 @@ def iobes_iob(tags):
         elif tag.split('-')[0] == 'O':
             new_tags.append(tag)
         else:
-            raise Exception('Invalid format!')
+            raise Exception('Invalid format: {}'.format(tag))
     return new_tags
 
 
