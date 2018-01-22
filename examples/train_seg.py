@@ -122,7 +122,7 @@ def train():
         update_tag_scheme(test_sentences, FLAGS.tag_schema)
 
     # create maps if not exist  创建index-term 映射表，如果存在则加载，否则创建
-    if not os.path.exists(FLAGS.map_file):
+    if not os.path.isfile(FLAGS.map_file):
         # create dictionary for word
         if FLAGS.pre_emb:
             dico_chars_train = char_mapping(train_sentences + dev_sentences, FLAGS.lower)[0]
