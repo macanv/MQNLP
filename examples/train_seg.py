@@ -122,22 +122,22 @@ def train():
         update_tag_scheme(test_sentences, FLAGS.tag_schema)
 
     # create maps if not exist  创建index-term 映射表，如果存在则加载，否则创建
-    if not os.path.exists(FLAGS.map_file):
+    if not os.path.isfile(FLAGS.map_file):
         # create dictionary for word
         if FLAGS.pre_emb:
-            dico_chars_train = char_mapping(train_sentences, FLAGS.lower)[0]
+            dico_chars_train = char_mapping(train_sentences + dev_sentences, FLAGS.lower)[0]
             dico_chars, char_to_id, id_to_char = augment_with_pretrained(
                 dico_chars_train.copy(),
                 FLAGS.emb_file,
                 list(itertools.chain.from_iterable(
-                    [[w[0] for w in s] for s in test_sentences])
+                    [[w[0] for w in s] for s in test_sentences + dev_sentences])
                 )
             )
         else:
-            _c, char_to_id, id_to_char = char_mapping(train_sentences, FLAGS.lower)
+            _c, char_to_id, id_to_char = char_mapping(train_sentences + dev_sentences + test_sentences, FLAGS.lower)
 
         # Create a dictionary and a mapping for tags
-        _t, tag_to_id, id_to_tag = tag_mapping(train_sentences)
+        _t, tag_to_id, id_to_tag = tag_mapping(train_sentences + dev_sentences + test_sentences)
         with open(FLAGS.map_file, "wb") as f:
             pickle.dump([char_to_id, id_to_char, tag_to_id, id_to_tag], f)
     else:
@@ -162,12 +162,7 @@ def train():
     test_manager = BatchManager(test_data, 100)
     # make path for store log and model if not exist
     make_path(FLAGS)
-    if os.path.isfile(FLAGS.config_file):
-        config = load_config(FLAGS.config_file)
-    else:
-        config = config_model(char_to_id, tag_to_id)
-        save_config(config, FLAGS.config_file)
-    make_path(FLAGS)
+    config = config_model(char_to_id, tag_to_id)
 
     log_path = FLAGS.log_file
     logger = get_logger(log_path)
@@ -189,7 +184,7 @@ def train():
                     iteration = step // steps_per_epoch + 1
                     logger.info("iteration:{} step:{}/{}, "
                                 "NER loss:{:>9.6f}".format(
-                        iteration, step%steps_per_epoch, steps_per_epoch, np.mean(loss)))
+                        iteration, step % steps_per_epoch, steps_per_epoch, np.mean(loss)))
                     loss = []
 
             best = evaluate(sess, model, "dev", dev_manager, id_to_tag, logger)
@@ -209,24 +204,13 @@ def evaluate_line():
     with tf.Session(config=tf_config) as sess:
         model = create_model(sess, Model, FLAGS.ckpt_path, load_word2vec, config, id_to_char, logger)
         while True:
-            # try:
-            #     line = input("请输入测试句子:")
-            #     result = model.evaluate_line(sess, input_from_line(line, char_to_id), id_to_tag)
-            #     print(result)
-            # except Exception as e:
-            #     logger.info(e)
+            line = input("请输入测试句子:")
+            result = model.evaluate_line(sess, input_from_line(line, char_to_id), id_to_tag)
+            print(result)
 
-                line = input("请输入测试句子:")
-                result = model.evaluate_line(sess, input_from_line(line, char_to_id), id_to_tag)
-                print(result)
 
 def main(_):
-    if FLAGS.train:
-        # if FLAGS.clean:
-        #     clean(FLAGS)
-        train()
-    else:
-        evaluate_line()
+    train()
 
 if __name__ == "__main__":
-    tf.app.run(main)
+    tf.app.run()
