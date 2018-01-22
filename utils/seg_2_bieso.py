@@ -6,14 +6,16 @@
 
 from sklearn.model_selection import train_test_split
 import codecs
+import re
 #
 
 def process(path):
     res = []
     with codecs.open(path, 'r', encoding='utf-8') as fd:
         for line in fd:
-            tokens = line.split(' ')
+            tokens = line.split()
             for token in tokens:
+                token = re.sub('[  \t\n]+', '', token)
                 tmp = []
                 if (len(token)) > 0:
                     lens = len(token)
@@ -55,12 +57,6 @@ def split(path):
     return train, dev, test
 
 def split_(datas):
-    data = split2(datas)
-    #
-    train, dev = train_test_split(data, train_size=0.8)
-    return train, dev
-
-def split2(datas):
     data = []
     sentence = []
     for line in datas:
@@ -77,7 +73,9 @@ def split2(datas):
             if line == '\n':
                 continue
             sentence.append(line)
-    return data
+    train, res = train_test_split(data, train_size=0.6)
+    dev, test = train_test_split(res, train_size=0.5)
+    return train, dev, test
 
 def save(path, data):
     with codecs.open(path, 'w', encoding='utf-8') as fd:
@@ -90,12 +88,8 @@ def save(path, data):
 
 if __name__ == '__main__':
     path = r'H:\BaiduNetdiskDownload\中文分词\msr_training.utf8'
-    path2 = r'H:\BaiduNetdiskDownload\中文分词\msr_test.utf8'
     data = process(path)
-    train, dev = split_(data)
-
-    data2 = process(path2)
-    test = split2(data2)
+    train, dev, test = split_(data)
 
     print(len(train), len(dev), len(test))
     save('seg.train', train)
