@@ -24,12 +24,12 @@ from tensorflow.contrib import learn
 
 # Data loading params
 tf.flags.DEFINE_float("dev_sample_percentage", .1, "Percentage of the training data to use for validation")
-tf.flags.DEFINE_string("train_path", r'../../../dataset/train', "Data source.")
-tf.flags.DEFINE_string("dev_path", r'../../../dataset/dev', "Data source.")
-tf.flags.DEFINE_string('vocab_path', r'../../../dataset/vocab', 'vocabulary path')
+tf.flags.DEFINE_string("train_path", r'../../dataset/train_1w', "Data source.")
+tf.flags.DEFINE_string("dev_path", r'../../dataset/dev_1w', "Data source.")
+tf.flags.DEFINE_string('vocab_path', r'../../dataset/vocab.pkl', 'vocabulary path')
 tf.flags.DEFINE_integer('sequence_length', 500, 'length of each sequence')
 tf.flags.DEFINE_integer("num_tags", 14, "number classes of datasets.")
-tf.flags.DEFINE_string('out_dir', '../../models', 'output directory')
+tf.flags.DEFINE_string('out_dir', '../models', 'output directory')
 
 # Model Hyperparameters
 tf.flags.DEFINE_integer("embedding_dim", 200, "Dimensionality of character embedding (default: 128)")
@@ -67,7 +67,7 @@ def train_cnnrnn():
     # Generate batches
     x_train, y_train = pickle.load(open(FLAGS.train_path, 'rb'))
     x_dev, y_dev = pickle.load(open(FLAGS.dev_path, 'rb'))
-    vocab_processer = learn.preprocessing.VocabularyProcessor.restore(FLAGS.vocab_path)
+    term2id, id2term = pickle.load(open(FLAGS.vocab_path, 'rb'))
     train_batches = batch_iter(list(zip(x_train, y_train)), FLAGS.batch_size, FLAGS.num_epochs)
 
     graph = tf.Graph()
@@ -77,7 +77,7 @@ def train_cnnrnn():
         with sess.as_default():
             cnn_rnn = CNNRNNsClassification(
                 embedding_mat=None,
-                vocab_size=len(vocab_processer.vocabulary_),
+                vocab_size=len(term2id),
                 sequence_length=FLAGS.sequence_length,
                 num_tags=FLAGS.num_tags,
                 non_static=FLAGS.non_static,
@@ -109,7 +109,7 @@ def train_cnnrnn():
 
             # Output directory for models and summaries
             timestamp = str(int(time.time()))
-            out_dir = os.path.abspath(os.path.join(FLAGS.out_dir, "runs_cnnrnn", timestamp))
+            out_dir = os.path.abspath(os.path.join(FLAGS.out_dir, "runs_cnnrnn"))
             print("Writing to {}\n".format(out_dir))
 
             # Summaries for loss and accuracy

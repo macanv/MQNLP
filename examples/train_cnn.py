@@ -116,7 +116,7 @@ def train_cnns():
 
             # Output directory for models and summaries
             timestamp = str(int(time.time()))
-            out_dir = os.path.abspath(os.path.join(FLAGS.out_dir, "runs_cnn", timestamp))
+            out_dir = os.path.abspath(os.path.join(FLAGS.out_dir, "runs_cnn"))
             print("Writing to {}\n".format(out_dir))
 
             # Summaries for loss and accuracy
