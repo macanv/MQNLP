@@ -73,7 +73,7 @@ def train_cnns():
 
     x_train, y_train = pickle.load(open(FLAGS.train_path, 'rb'))
     x_dev, y_dev = pickle.load(open(FLAGS.dev_path, 'rb'))
-    vocab_processer = learn.preprocessing.VocabularyProcessor.restore(FLAGS.vocab_path)
+    term2id, id2term = pickle.load(open(FLAGS.vocab_path, 'rb'))
     train_batches = batch_iter(list(zip(x_train, y_train)), FLAGS.batch_size, FLAGS.num_epochs)
 
     # dev_x, dev_y, _ = load_data(FLAGS.dev_path, FLAGS.sequence_length)
@@ -89,7 +89,7 @@ def train_cnns():
             cnn = CNNClassification(
                 sequence_length=FLAGS.sequence_length,
                 num_tags=FLAGS.num_tags,
-                vocab_size=len(vocab_processer.vocabulary_),
+                vocab_size=len(term2id),
                 embedding_size=FLAGS.embedding_dim,
                 filter_sizes=list(map(int, FLAGS.filter_sizes.split(","))),
                 num_filters=FLAGS.num_filters,

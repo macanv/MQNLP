@@ -7,8 +7,16 @@ from sklearn.utils import shuffle
 from tensorflow.contrib import learn
 import operator
 
-# category = ['星座', '股票', '房产', '时尚', '体育', '社会', '家居', '游戏', '彩票', '科技', '教育', '时政', '娱乐', '财经']
-category = ['体育', '股票', '科技']
+category = ['星座', '股票', '房产', '时尚', '体育', '社会', '家居', '游戏', '彩票', '科技', '教育', '时政', '娱乐', '财经']
+#category = ['体育', '股票', '科技']
+
+def tag_id(category):
+    """
+    将tag 转化为ID
+    :param category: 
+    :return: 
+    """
+    pass
 
 def split_data_and_label(corpus):
     """
@@ -63,14 +71,7 @@ def pad_sequence(input_x, maxlen=None, vocab_processer=None):
             rst.append(line + [0] * (maxlen - len(line)))
         else:
             rst.append(line[:maxlen])
-    return np.asarray(rst)
-    # if vocab_processer is None:
-    #     vocab_processer = learn.preprocessing.VocabularyProcessor(max_document_length=maxlen)
-    #     vocab_processer.fit(input_x)
-    #
-    # input_x = np.array(list(vocab_processer.transform(input_x)))
-    # return np.array(input_x), vocab_processer#vocab_process.vocabulary_._mapping
-
+    return rst
 
 # ### one-hot for category
 def label_one_hot(targets, nb_classes):
@@ -179,7 +180,7 @@ def word_index_fit(data, features):
     将文本转化为id 格式
     :param data: 
     :param features: 
-    :return: 
+    :return: term2id, id2term
     """
     term2id = {}
     id2term = []
@@ -224,7 +225,7 @@ def word_index_fit_transform(data, features):
     trans term doc to index doc
     :param data: 
     :param features: 
-    :return: 
+    :return: trans data, term2id, id2term
     """
     term2id, id2term = word_index_fit(data, features)
     rst = word_index_transform(data, term2id)
@@ -232,23 +233,51 @@ def word_index_fit_transform(data, features):
 
 class batch_manager(object):
 
-    def __init__(self, file_path, maxlen, batch_size, epochs):
+    def __init__(self, data, batch_size, num_epochs, maxlen=500, shuffle=True):
         """
         加载指定目录，通过maxlen参数，进行padding数据，并且按照batch_size 和epochs 进行batch generator
         :param file_path: 
         :param maxlen: 
         """
-        input_x, input_y = split_data_and_label(file_path)
+        data = np.array(data)
+        # 样本数量
+        data_size = len(data)
+        # 根据batch size 计算一个epoch中的batch 数量
+        num_batches_per_epoch = int((len(data) - 1) / batch_size) + 1
+        # generates iter for dataset.
+        for epoch in range(num_epochs):
+            # Shuffle the data at each epoch
+            if shuffle:
+                shuffle_indices = np.random.permutation(np.arange(data_size))
+                shuffled_data = data[shuffle_indices]
+            else:
+                shuffled_data = data
+            for batch_num in range(num_batches_per_epoch):
+                start_index = batch_num * batch_size
+                end_index = min((batch_num + 1) * batch_size, data_size)
+                data = shuffled_data[start_index, end_index]
+                # padding
+                yield pad_sequence(data, maxlen)
 
-        input_x, words_index = pad_sequence(input_x, maxlen)
+if __name__ == '__main__':
+    path = r''
+    # input_x = ['我 爱 北京', '我 爱 北京 天安门', '天安门 城楼 在 北京']
+    # dev_x = ['我 是 北京 人 ， 我 喜欢 天安门']
+    input_x, input_y = split_data_and_label(path)
+    input_x, term2id, id2term = word_index_fit_transform(input_x, 1000000)
+    label_ = set()
+    [label_.add(y) for y in input_y]
+    nb_class = len(label_)
+    input_y = label_one_hot(input_y, nb_class)
 
-        label_ = set()
-        [label_.add(y) for y in input_y]
-        nb_class = len(label_)
-        input_y = label_one_hot(input_y, nb_class)
+    input_x, input_y, term2id, id2term = load_data(file_path, 500)
+    input_x = pad_sequence(input_x)
+    x_train, x_dev, y_train, y_dev = train_test_split(input_x, input_y, train_size=0.6, random_state=123)
+    x_dev, x_test, y_dev, y_test = train_test_split(x_dev, y_dev, train_size=0.5, random_state=123)
+    print("Vocabulary Size: {:d}".format(len(vocab_processer.vocabulary_)))
+    print("Train/Dev split: {:d}/{:d}".format(len(y_train), len(y_dev)))
 
-
-        input_x, input_y, self.word_index = load_data(file_path, maxlen)
-        self.batches = batch_iter(list(zip(input_x, input_y)), batch_size, epochs)
-        self.length = len(input_y)
-
+    pickle.dump([x_train, y_train], open('train_1w', 'wb'))
+    pickle.dump([x_dev, y_dev], open('dev_1w', 'wb'))
+    pickle.dump([x_test, y_test], open('test_1w', 'wb'))
+    pickle.dump([term2id, id2term], open('vocab.pkl', 'wb'))
