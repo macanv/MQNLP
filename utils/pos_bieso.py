@@ -8,6 +8,8 @@ from sklearn.model_selection import train_test_split
 import codecs
 #
 
+
+
 def process(path):
     res = []
     with codecs.open(path, 'r', encoding='gbk') as fd:
@@ -91,8 +93,6 @@ def save(path, data):
             for term in line:
                 fd.write(term + "\n")
             fd.write('\n')
-
-
 
 if __name__ == '__main__':
     path = r'C:\Users\Macan\Desktop\199801.txt'

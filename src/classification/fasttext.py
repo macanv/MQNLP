@@ -51,7 +51,7 @@ class fasttext(object):
             self.W = tf.get_variable('W', [self.embedding_dims, self.num_tags])
             self.b = tf.get_variable('b', [self.num_tags])
 
-            self.logits = tf.matmul(self.sentence_embedd, self.W) + self.b
+            self.logits = tf.nn.xw_plus_b(self.sentence_embedd, self.W, self.b, name='logits')
 
         with tf.name_scope('loss'):
             # classes = tf.reshape(self.num_classes, [-1])

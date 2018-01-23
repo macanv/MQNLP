@@ -104,7 +104,6 @@ def load_data(file_path, maxlen=None):
     input_y = label_one_hot(input_y, nb_class)
     return input_x, input_y, vocab_processer
 
-
 # ### batch data generate
 def batch_iter(data, batch_size, num_epochs, shuffle=True):
     """
@@ -216,7 +215,7 @@ def word_index_transform(data, term2id):
         s = []
         if len(line) > 0:
             for term in line:
-                s.append(term2id.get(term, 0))# += str(term2id.get(term, 0))
+                s.append(term2id.get(term, 0))# += str(term2id.get(term, 0)) 没有在字典中找到的，编码为0
             rst.append(s)
     return np.asarray(rst)
 

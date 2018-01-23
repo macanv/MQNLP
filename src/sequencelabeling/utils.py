@@ -189,6 +189,12 @@ def create_model(session, Model_class, path, load_vec, config, id_to_char, logge
 
 
 def result_to_json(string, tags):
+    """
+    将模型标注序列和输入序列结合 转化为结果
+    :param string: 输入序列
+    :param tags: 标注结果
+    :return: 
+    """
     item = {"string": string, "entities": []}
     entity_name = ""
     entity_start = 0

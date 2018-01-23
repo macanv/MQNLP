@@ -117,11 +117,11 @@ class CNNClassification(object):
             self.l2_loss += tf.nn.l2_loss(W)
             self.l2_loss += tf.nn.l2_loss(b)
 
-            self.scores = tf.nn.xw_plus_b(self.h_drop, W, b, name='scores')
+            self.scores = tf.nn.xw_plus_b(self.h_drop, W, b, name='scores') #[batch_szie, taget_size]
             # using softmax to normolize output
             # self.scores = tf.nn.softmax(logits=self.scores)
             # 以概率最大，获得每个样本 的类别
-            self.predictions = tf.argmax(self.scores, 1, name='predictions')
+            self.predictions = tf.argmax(self.scores, 1, name='predictions') #[batch_size, 1]
 
         # 计算损失
         with tf.name_scope('loss'):

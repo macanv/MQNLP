@@ -44,7 +44,7 @@ with graph.as_default():
         allow_soft_placement=FLAGS.allow_soft_placement,
         log_device_placement=FLAGS.log_device_placement
     )
-    sess = tf.Session(session_conf)
+    sess = tf.Session(config=session_conf)
     with sess.as_default():
         # 从文件中加载模型
         saver = tf.train.import_meta_graph('{}.meta'.format(model_path))
@@ -54,7 +54,7 @@ with graph.as_default():
         input_x = graph.get_operation_by_name('input_x').outputs[0]
         dropout_keep_prob = graph.get_operation_by_name('dropout_keep_prob').outputs[0]
 
-        predictions = graph.get_operation_by_name('output/predictions').outputs[0]
+        predictions = graph.get_operation_by_name('output/predictons').outputs[0]
 
         batches = batch_iter(list(test_x), FLAGS.batch_size, 1, shuffle=False)
 
