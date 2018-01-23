@@ -28,12 +28,12 @@ from tensorflow.contrib import learn
 
 # Data loading params
 tf.flags.DEFINE_float("train_size", .1, "Percentage of the training data to use for validation")
-tf.flags.DEFINE_string("train_path", r'../../../dataset/train', "Data source.")
-tf.flags.DEFINE_string("dev_path", r'../../../dataset/dev', "Data source.")
-tf.flags.DEFINE_string('vocab_path', r'../../../dataset/vocab', 'vocabulary path')
+tf.flags.DEFINE_string("train_path", r'../../dataset/train_1w', "Data source.")
+tf.flags.DEFINE_string("dev_path", r'../../dataset/dev_1w', "Data source.")
+tf.flags.DEFINE_string('vocab_path', r'../../dataset/vocab.pkl', 'vocabulary path')
 tf.flags.DEFINE_integer('sequence_length', 500, 'length of each sequence')
 tf.flags.DEFINE_integer("num_tags", 14, "number classes of datasets.")
-tf.flags.DEFINE_string('out_dir', '../../models', 'output directory')
+tf.flags.DEFINE_string('out_dir', '../models', 'output directory')
 
 # Model Hyperparameters
 tf.flags.DEFINE_integer("embedding_dim", 200, "Dimensionality of character embedding (default: 128)")
