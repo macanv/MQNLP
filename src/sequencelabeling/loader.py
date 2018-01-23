@@ -25,10 +25,10 @@ def load_sentences(path, lower, zeros):
         else:
             if line[0] == " ":
                 line = "$" + line[1:]
-                word = line.split()
+                word = line.split('\t')
                 # word[0] = " "
             else:
-                word= line.split()
+                word = line.split('\t')
             assert len(word) >= 2, print([word[0]])
             sentence.append(word)
     if len(sentence) > 1:
