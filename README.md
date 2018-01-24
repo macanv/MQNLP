@@ -22,10 +22,16 @@ http://blog.csdn.net/macanv/article/details/78964020
 - 8. ...
 
 ####  2. 中文分词
+> 包含基于序列标注的BiLSTM-CRF 和一种无须词典的中文分词，基于HMM的中文分词代码后续再实现
+> 无须词典的中文分词方法基于粘合度和边界熵的中文分词，方法提出blog:http://www.matrix67.com/blog/archives/5044
+   实现地址:https://github.com/Moonshile/ChineseWordSegmentation
+> 我在其实现上修改了部分代码，支持python3
+##### 2.1 一点废话：
+> 无须词典的中文分词，我更倾向于认为他是一个词典生成方法，原始模型不受已经存在的词典影响，直接由训练数据中的写作风格影响，不区分于领域。
 
 #### 3. 命名实体识别
 > 添加分词信息的中文命名实体识别，在其基础上进行了修改，论文正在审，录用了会上传最新的代码。
-参考:
+参考: https://github.com/zjy-ucas/ChineseNER
 
 #### 4. 词性标注
 > 这部分代码任然使用的是和NER中一样的代码(BiLSTM+CRF 序列标注模型))，没有使用分词特征，在人民日报一月语料库上效果相对会好一些
@@ -33,7 +39,8 @@ http://blog.csdn.net/macanv/article/details/78964020
 #### 4. 关系抽取
 
 #### 5. 关键词抽取
-
+> 实现了基于tf-idf、textrank 的关键词抽取
 #### 6. 文章摘要
+> 正在准备实现基于seq2seq的，苦于没有训练语料
 
 #### 7. 主题模型(不要face的写上吧)

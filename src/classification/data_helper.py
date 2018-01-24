@@ -259,25 +259,25 @@ class batch_manager(object):
                 # padding
                 yield pad_sequence(data, maxlen)
 
-if __name__ == '__main__':
-    path = r''
-    # input_x = ['我 爱 北京', '我 爱 北京 天安门', '天安门 城楼 在 北京']
-    # dev_x = ['我 是 北京 人 ， 我 喜欢 天安门']
-    input_x, input_y = split_data_and_label(path)
-    input_x, term2id, id2term = word_index_fit_transform(input_x, 1000000)
-    label_ = set()
-    [label_.add(y) for y in input_y]
-    nb_class = len(label_)
-    input_y = label_one_hot(input_y, nb_class)
-
-    input_x, input_y, term2id, id2term = load_data(file_path, 500)
-    input_x = pad_sequence(input_x)
-    x_train, x_dev, y_train, y_dev = train_test_split(input_x, input_y, train_size=0.6, random_state=123)
-    x_dev, x_test, y_dev, y_test = train_test_split(x_dev, y_dev, train_size=0.5, random_state=123)
-    print("Vocabulary Size: {:d}".format(len(vocab_processer.vocabulary_)))
-    print("Train/Dev split: {:d}/{:d}".format(len(y_train), len(y_dev)))
-
-    pickle.dump([x_train, y_train], open('train_1w', 'wb'))
-    pickle.dump([x_dev, y_dev], open('dev_1w', 'wb'))
-    pickle.dump([x_test, y_test], open('test_1w', 'wb'))
-    pickle.dump([term2id, id2term], open('vocab.pkl', 'wb'))
+# if __name__ == '__main__':
+#     path = r''
+#     # input_x = ['我 爱 北京', '我 爱 北京 天安门', '天安门 城楼 在 北京']
+#     # dev_x = ['我 是 北京 人 ， 我 喜欢 天安门']
+#     input_x, input_y = split_data_and_label(path)
+#     input_x, term2id, id2term = word_index_fit_transform(input_x, 1000000)
+#     label_ = set()
+#     [label_.add(y) for y in input_y]
+#     nb_class = len(label_)
+#     input_y = label_one_hot(input_y, nb_class)
+#
+#     input_x, input_y, term2id, id2term = load_data(file_path, 500)
+#     input_x = pad_sequence(input_x)
+#     x_train, x_dev, y_train, y_dev = train_test_split(input_x, input_y, train_size=0.6, random_state=123)
+#     x_dev, x_test, y_dev, y_test = train_test_split(x_dev, y_dev, train_size=0.5, random_state=123)
+#     print("Vocabulary Size: {:d}".format(len(vocab_processer.vocabulary_)))
+#     print("Train/Dev split: {:d}/{:d}".format(len(y_train), len(y_dev)))
+#
+#     pickle.dump([x_train, y_train], open('train_1w', 'wb'))
+#     pickle.dump([x_dev, y_dev], open('dev_1w', 'wb'))
+#     pickle.dump([x_test, y_test], open('test_1w', 'wb'))
+#     pickle.dump([term2id, id2term], open('vocab.pkl', 'wb'))
