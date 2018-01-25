@@ -23,8 +23,8 @@ flags.DEFINE_string('ner_model_path', r'../models/ner', 'named entity recognitio
 flags.DEFINE_string('pos_model_path', r'../models/pos', 'pos tags model path')
 flags.DEFINE_string('cnn_text', r'../models/runs_cnn/1515656821/checkpoints', 'text classification model path of cnn')
 # flags.DEFINE_string('cnn_text', r'C:\Users\Macan\Desktop\run_cnn', 'text classification model path of cnn')
-flags.DEFINE_string('rnn_text', r'../models/runs_rnn/1515656821/checkpoints', 'text classification model path of rnn')
-flags.DEFINE_string('fasttext', r'../models/runs_fasttext/1515656790/checkpoints', 'text classification model path of fast text')
+flags.DEFINE_string('rnn_text', r'../models/runs_rnn/checkpoints', 'text classification model path of rnn')
+flags.DEFINE_string('fasttext', r'../models/runs_fasttext/checkpoints', 'text classification model path of fast text')
 
 # config path
 flags.DEFINE_string('config_seg_path', r'../models/seg/config_file', 'config file of segment sequence model')
@@ -208,7 +208,7 @@ class MQNLP(object):
                 # 预测类别，（最大概率）
                 scores = graph.get_operation_by_name('logits').outputs[0]
                 # text index encode
-                text = np.array(list(vocab_processer.transform(text)))
+                text = np.array(list(vocab_processer.fit_transform(text)))
                 feed_dict = {input_x: text}
                 score = sess.run(scores, feed_dict=feed_dict)
                 label_list, value_list = get_label_using_logits_with_value(score[0], category, 5)
@@ -236,9 +236,9 @@ def get_label_using_logits_with_value(logits,category,top_number=5):
 
 if __name__ == '__main__':
     text = r'央广网上海1月23日消息（记者王渝新 杨静 傅闻捷 唐奇云）今天（23日）上午上海市人大十五届一次会议举行开幕会议，上海市人民政府市长应勇作市人民政府工作报告。应勇说，坚持“房子是用来住的，不是用来炒的”定位，坚持严控高房价高地价不是权宜之计、减少经济增长和财政收入对房地产业的依赖也不是权宜之计，加强房地产市场调控不动摇、不放松。提高中小套型供应比例，促进商品房有效供给。应勇说，加快建立多主体供给、多渠道保障、租购并举的住房制度。坚持“房子是用来住的，不是用来炒的”定位，坚持严控高房价高地价不是权宜之计、减少经济增长和财政收入对房地产业的依赖也不是权宜之计，加强房地产市场调控不动摇、不放松。提高中小套型供应比例，促进商品房有效供给。加大租赁房建设力度，新建和转化租赁房源20万套，新增代理经租房源9万套，新增供应5.5万套各类保障房，完善共有产权住房制度，放宽廉租住房准入标准。坚持留改拆并举、以保留保护为主，推进城市有机更新，完成40万平方米中心城区二级旧里以下房屋改造，实施300万平方米旧住房综合改造，修缮保护100万平方米各类里弄房屋。'
-    import jieba
-    text = ' '.join(jieba.cut(text))
-    nlp = MQNLP.text_class2(text, 'fasttext')
+    # import jieba
+    # text = ' '.join(jieba.cut(text))
+    nlp = MQNLP.text_class2(text, 'cnn')
 
 
 

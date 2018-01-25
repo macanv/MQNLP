@@ -126,12 +126,12 @@ class RNNsClassification(basicModel):
             self.b = tf.Variable(tf.constant(0.1, shape=[self.num_tags]), dtype=tf.float32, name='b')
 
             # full coneection and softmax output
-            self.logits = tf.nn.softmax(tf.matmul(h_state, self.W) + self.b)
+            self.logits = tf.nn.softmax(tf.matmul(h_state, self.W) + self.b, name='logits')
 
         # 4. loss
         with tf.name_scope('loss'):
             cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits=self.logits, labels=self.input_y)
-            self.loss = tf.reduce_mean(cross_entropy)
+            self.loss = tf.reduce_mean(cross_entropy, name='loss')
             # l2_loss = tf.add_n([tf.nn.l2_loss(v) for v in tf.trainable_variables()
             #                     if 'bias' not in v.name]) * self.l2_reg_lambda
 
@@ -142,7 +142,7 @@ class RNNsClassification(basicModel):
         with tf.name_scope('accuracy'):
             self.predicted = tf.equal(tf.argmax(self.logits, 1),
                                  tf.argmax(self.input_y, 1))
-            self.accuracy = tf.reduce_mean(tf.cast(self.predicted, dtype=tf.float32))
+            self.accuracy = tf.reduce_mean(tf.cast(self.predicted, dtype=tf.float32), name='accuracy')
 
         with tf.name_scope('num_prediction'):
             self.num_correct = tf.reduce_sum(tf.cast(self.predicted, dtype=tf.float32), name='num_correct')

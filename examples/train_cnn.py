@@ -28,9 +28,9 @@ from tensorflow.contrib import learn
 
 # Data loading params
 tf.flags.DEFINE_float("train_size", .1, "Percentage of the training data to use for validation")
-tf.flags.DEFINE_string("train_path", r'../../dataset/train_1w', "Data source.")
-tf.flags.DEFINE_string("dev_path", r'../../dataset/dev_1w', "Data source.")
-tf.flags.DEFINE_string('vocab_path', r'../../dataset/vocab.pkl', 'vocabulary path')
+tf.flags.DEFINE_string("train_path", r'../../dataset/train_5k', "Data source.")
+tf.flags.DEFINE_string("dev_path", r'../../dataset/dev_5k', "Data source.")
+tf.flags.DEFINE_string('vocab_path', r'../../dataset/vocab_5k', 'vocabulary path')
 tf.flags.DEFINE_integer('sequence_length', 500, 'length of each sequence')
 tf.flags.DEFINE_integer("num_tags", 14, "number classes of datasets.")
 tf.flags.DEFINE_string('out_dir', '../models', 'output directory')
@@ -73,7 +73,7 @@ def train_cnns():
 
     x_train, y_train = pickle.load(open(FLAGS.train_path, 'rb'))
     x_dev, y_dev = pickle.load(open(FLAGS.dev_path, 'rb'))
-    term2id, id2term = pickle.load(open(FLAGS.vocab_path, 'rb'))
+    vocab_processer = pickle.load(open(FLAGS.vocab_path, 'rb'))
     train_batches = batch_iter(list(zip(x_train, y_train)), FLAGS.batch_size, FLAGS.num_epochs)
 
     # dev_x, dev_y, _ = load_data(FLAGS.dev_path, FLAGS.sequence_length)
@@ -89,7 +89,7 @@ def train_cnns():
             cnn = CNNClassification(
                 sequence_length=FLAGS.sequence_length,
                 num_tags=FLAGS.num_tags,
-                vocab_size=len(term2id),
+                vocab_size=len(vocab_processer.vocabulary_),
                 embedding_size=FLAGS.embedding_dim,
                 filter_sizes=list(map(int, FLAGS.filter_sizes.split(","))),
                 num_filters=FLAGS.num_filters,
