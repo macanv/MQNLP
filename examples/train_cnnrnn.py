@@ -8,8 +8,8 @@ import time
 import datetime
 import os
 import pickle
-import sys
 
+import sys
 sys.path.append("..")
 from src.classification.data_helper import batch_manager, load_data, batch_iter
 from src.classification.CNNs import CNNClassification
@@ -136,6 +136,7 @@ def train_cnnrnn():
             # write vocabulary
             # pickle.dumps(word_index, open(os.path.join(out_dir, 'vocab'), 'wb'))
             # initlize all vraiables
+            # tf.global_variables_initializer
             sess.run(tf.initialize_all_variables())
             def real_len(batches):
                 return [np.ceil(np.argmin(batch + [0]) * 1.0 / FLAGS.max_pool_size) for batch in batches]

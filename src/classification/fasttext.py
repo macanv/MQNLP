@@ -40,7 +40,7 @@ class fasttext(object):
         # 1. embedding layer
         with tf.device('/cpu:0'), tf.name_scope('embedding'):
             self.Embedding = tf.Variable(tf.random_uniform([self.vocab_size, self.embedding_dims],
-                                                           -1., 1.,dtype=tf.float32), name='Embedding')
+                                                           -1., 1., dtype=tf.float32), name='Embedding')
             self.embedding_chars = tf.nn.embedding_lookup(self.Embedding, self.input_x)
 
         # 2. skip gram

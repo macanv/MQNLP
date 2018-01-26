@@ -162,13 +162,20 @@ class WordSegment(object):
 if __name__ == '__main__':
     doc = u'十四是十四四十是四十，，十四不是四十，，，，四十不是十四'
     ws = WordSegment(doc, max_word_len=2, min_aggregation=1.2, min_entropy=0.4)
-    print (' '.join(map(lambda w: '%s:%f'%w, ws.word_with_freq)))
-    print (' '.join(ws.words))
-    print (' '.join(ws.segSentence(doc)))
-    print ('average len: ', ws.avg_len)
-    print ('average frequency: ', ws.avg_freq)
-    print ('average left entropy: ', ws.avg_left_entropy)
-    print ('average right entropy: ', ws.avg_right_entropy)
-    print ('average aggregation: ', ws.avg_aggregation)
+
+    import sys
+    import codecs
+    path = sys.argv[1]
+    with codecs.open(path, 'r', encoding='utf-8') as fd:
+        for line in fd:
+            ws = WordSegment()
+    print(' '.join(map(lambda w: '%s:%f'%w, ws.word_with_freq)))
+    print(' '.join(ws.words))
+    print(' '.join(ws.segSentence(doc)))
+    print('average len: ', ws.avg_len)
+    print('average frequency: ', ws.avg_freq)
+    print('average left entropy: ', ws.avg_left_entropy)
+    print('average right entropy: ', ws.avg_right_entropy)
+    print('average aggregation: ', ws.avg_aggregation)
 
 

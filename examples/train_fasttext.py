@@ -23,12 +23,12 @@ from tensorflow.contrib import learn
 def train_fasttext():
     # Data loading params
     tf.flags.DEFINE_float("dev_sample_percentage", .1, "Percentage of the training data to use for validation")
-    tf.flags.DEFINE_string("train_path", r'../../../dataset/train', "Data source.")
-    tf.flags.DEFINE_string("dev_path", r'../../../dataset/dev', "Data source.")
-    tf.flags.DEFINE_string('vocab_path', r'../../../dataset/vocab', 'vocabulary path')
+    tf.flags.DEFINE_string("train_path", r'../../dataset/train_5k', "Data source.")
+    tf.flags.DEFINE_string("dev_path", r'../../dataset/dev_5k', "Data source.")
+    tf.flags.DEFINE_string('vocab_path', r'../../dataset/vocab_5k', 'vocabulary path')
     tf.flags.DEFINE_integer('sequence_length', 500, 'length of each sequence')
     tf.flags.DEFINE_integer("num_tags", 14, "number classes of datasets.")
-    tf.flags.DEFINE_string('out_dir', '../../models', 'output directory')
+    tf.flags.DEFINE_string('out_dir', '../models', 'output directory')
 
     # Model Hyperparameters
     tf.flags.DEFINE_integer("embedding_dim", 200, "Dimensionality of character embedding (default: 128)")
@@ -94,7 +94,7 @@ def train_fasttext():
 
             # Output directory for models and summaries
             timestamp = str(int(time.time()))
-            out_dir = os.path.abspath(os.path.join(FLAGS.out_dir, "runs_fasttext", timestamp))
+            out_dir = os.path.abspath(os.path.join(FLAGS.out_dir, "runs_fasttext"))
             print("Writing to {}\n".format(out_dir))
 
             # Summaries for loss and accuracy
