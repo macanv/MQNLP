@@ -47,10 +47,10 @@ flags.DEFINE_string("vocab_file",   r"../models/pos/vocab.json",   "File for voc
 flags.DEFINE_string("config_file",  r"../models/pos/config_file",  "File for config")
 flags.DEFINE_string("result_path",  r"../models/pos/result",       "Path for results")
 
-flags.DEFINE_string("emb_file", r'../../dataset/wiki_100.utf8',  "Path for pre_trained embedding")
-flags.DEFINE_string("train_file", r'../../dataset/pos/pos.train',  "Path for train data")
-flags.DEFINE_string("dev_file", r'../../dataset/pos/pos.dev',    "Path for dev data")
-flags.DEFINE_string("test_file", r'../../dataset/pos/pos.test',   "Path for test data")
+flags.DEFINE_string("emb_file", r'../dataset/wiki_100.utf8',  "Path for pre_trained embedding")
+flags.DEFINE_string("train_file", r'../dataset/pos/pos.train',  "Path for train data")
+flags.DEFINE_string("dev_file", r'../dataset/pos/pos.dev',    "Path for dev data")
+flags.DEFINE_string("test_file", r'../dataset/pos/pos.test',   "Path for test data")
 
 #flags.DEFINE_string("model_type", "idcnn", "Model type, can be idcnn or bilstm")
 flags.DEFINE_string("model_type", "bilstm", "Model type, can be idcnn or bilstm")
@@ -163,7 +163,7 @@ def train():
     make_path(FLAGS)
     config = config_model(char_to_id, tag_to_id)
 
-    log_path = os.path.join(FLAGS.log_file, "log")
+    log_path = FLAGS.log_file
     logger = get_logger(log_path)
     print_config(config, logger)
 

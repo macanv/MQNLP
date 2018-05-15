@@ -85,7 +85,7 @@ class RNNsClassification(basicModel):
         :return:
         """
         # 1. embedding layer
-        with tf.name_scope('embedding'):
+        with tf.device('/gpu:0'), tf.name_scope('embedding'):
             if self.embedding_mat is None:
                 self.Embedding = tf.Variable(tf.random_uniform([self.vocab_size, self.embedding_dims],
                                                                -1., 1.), name='Embedding')

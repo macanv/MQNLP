@@ -10,6 +10,9 @@ import os
 import pickle
 import sys
 
+# 设置使用的显卡no，（因为我机器上有多快显卡）
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+
 sys.path.append("..")
 from src.classification.data_helper import batch_manager, load_data, batch_iter
 from src.classification.CNNs import CNNClassification
@@ -28,9 +31,9 @@ from tensorflow.contrib import learn
 
 # Data loading params
 tf.flags.DEFINE_float("train_size", .1, "Percentage of the training data to use for validation")
-tf.flags.DEFINE_string("train_path", r'../../dataset/train_5k', "Data source.")
-tf.flags.DEFINE_string("dev_path", r'../../dataset/dev_5k', "Data source.")
-tf.flags.DEFINE_string('vocab_path', r'../../dataset/vocab_5k', 'vocabulary path')
+tf.flags.DEFINE_string("train_path", r'../dataset/train_5k', "Data source.")
+tf.flags.DEFINE_string("dev_path", r'../dataset/dev_5k', "Data source.")
+tf.flags.DEFINE_string('vocab_path', r'../dataset/vocab_5k', 'vocabulary path')
 tf.flags.DEFINE_integer('sequence_length', 500, 'length of each sequence')
 tf.flags.DEFINE_integer("num_tags", 14, "number classes of datasets.")
 tf.flags.DEFINE_string('out_dir', '../models', 'output directory')
@@ -83,6 +86,7 @@ def train_cnns():
         session_conf = tf.ConfigProto(
             allow_soft_placement=FLAGS.allow_soft_placement,
             log_device_placement=FLAGS.log_device_placement)
+        session_conf.gpu_options.allow_growth = True
         sess = tf.Session(config=session_conf)
         with sess.as_default():
             # 构建cnn 节点

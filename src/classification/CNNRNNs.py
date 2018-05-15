@@ -61,7 +61,7 @@ class CNNRNNsClassification(object):
 
     def network(self):
 
-        with tf.device('/cpu:0'), tf.name_scope('embedding'):
+        with tf.device('/gpu:0'), tf.name_scope('embedding'):
             if not self.non_static:
                 W = tf.constant(self.embedding_mat, name='W')
             else:

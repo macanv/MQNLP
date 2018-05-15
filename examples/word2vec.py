@@ -84,12 +84,19 @@ def train(inp, outp1, outp2):
     :param outp2: vec文件
     :return: 
     """
+    inp, new_inp, outp1, outp2 = sys.argv[1:5]
+    model = Word2Vec()
+    model = model.load(inp)
+    model.build_vocab(LineSentence(new_inp), update=True)
+    model.train()
+
     model = Word2Vec(LineSentence(inp), size=400, window=5, min_count=5,
-                     workers=multiprocessing.cpu_count())
+                     workers=multiprocessing.cpu_count(), iter=100, sg=1)
     # trim unneeded model memory = use(much) less RAM
     # model.init_sims(replace=True)
     model.save(outp1)
     model.wv.save_word2vec_format(outp2, binary=False)
+
 
 def seg():
     path, to_path = sys.argv[1:3]

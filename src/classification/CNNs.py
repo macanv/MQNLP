@@ -60,7 +60,7 @@ class CNNClassification(object):
         :return: 
         """
         # embedding layer
-        with tf.device('/cpu:0'), tf.name_scope('embedding'):
+        with tf.device('/gpu:0'), tf.name_scope('embedding'):
             # embedding 权重
             self.W = tf.Variable(
                 tf.random_uniform([self.vocab_size, self.embedding_size], -1., 1.),

@@ -48,10 +48,10 @@ flags.DEFINE_string("config_file",  r"../models/seg/config_file",  "File for con
 flags.DEFINE_string("script",       r"../../dataset/seg/conlleval",    "evaluation script")
 flags.DEFINE_string("result_path",  r"../models/seg/result",       "Path for results")
 
-flags.DEFINE_string("emb_file", r'../../dataset/wiki_100.utf8',  "Path for pre_trained embedding")
-flags.DEFINE_string("train_file", r'../../dataset/seg/seg.train',  "Path for train data")
-flags.DEFINE_string("dev_file", r'../../dataset/seg/seg.dev',    "Path for dev data")
-flags.DEFINE_string("test_file", r'../../dataset/seg/seg.test',   "Path for test data")
+flags.DEFINE_string("emb_file", r'../dataset/wiki_100.utf8',  "Path for pre_trained embedding")
+flags.DEFINE_string("train_file", r'../dataset/seg/seg.train',  "Path for train data")
+flags.DEFINE_string("dev_file", r'../dataset/seg/seg.dev',    "Path for dev data")
+flags.DEFINE_string("test_file", r'../dataset/seg/seg.test',   "Path for test data")
 
 #flags.DEFINE_string("model_type", "idcnn", "Model type, can be idcnn or bilstm")
 flags.DEFINE_string("model_type", "bilstm", "Model type, can be idcnn or bilstm")

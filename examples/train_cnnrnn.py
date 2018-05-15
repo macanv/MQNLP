@@ -9,6 +9,8 @@ import datetime
 import os
 import pickle
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+
 import sys
 sys.path.append("..")
 from src.classification.data_helper import batch_manager, load_data, batch_iter
@@ -24,9 +26,9 @@ from tensorflow.contrib import learn
 
 # Data loading params
 tf.flags.DEFINE_float("dev_sample_percentage", .1, "Percentage of the training data to use for validation")
-tf.flags.DEFINE_string("train_path", r'../../dataset/train_5k', "Data source.")
-tf.flags.DEFINE_string("dev_path", r'../../dataset/dev_5k', "Data source.")
-tf.flags.DEFINE_string('vocab_path', r'../../dataset/vocab_5k', 'vocabulary path')
+tf.flags.DEFINE_string("train_path", r'../dataset/train_5k', "Data source.")
+tf.flags.DEFINE_string("dev_path", r'../dataset/dev_5k', "Data source.")
+tf.flags.DEFINE_string('vocab_path', r'../dataset/vocab_5k', 'vocabulary path')
 tf.flags.DEFINE_integer('sequence_length', 500, 'length of each sequence')
 tf.flags.DEFINE_integer("num_tags", 14, "number classes of datasets.")
 tf.flags.DEFINE_string('out_dir', '../models', 'output directory')
@@ -73,7 +75,9 @@ def train_cnnrnn():
     graph = tf.Graph()
     with graph.as_default():
         session_conf = tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)
+        session_conf.gpu_options.allow_growth = True
         sess = tf.Session(config=session_conf)
+
         with sess.as_default():
             cnn_rnn = CNNRNNsClassification(
                 embedding_mat=None,
