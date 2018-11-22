@@ -7,6 +7,7 @@ from sklearn.model_selection import train_test_split
 import time
 import datetime
 import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "5"
 import pickle
 import sys
 
@@ -68,6 +69,7 @@ def train_rnn():
         session_conf = tf.ConfigProto(
           allow_soft_placement=FLAGS.allow_soft_placement,
           log_device_placement=FLAGS.log_device_placement)
+        session_conf.gpu_options.allow_growth = True
         sess = tf.Session(config=session_conf)
         with sess.as_default():
             # 构建rnn 节点

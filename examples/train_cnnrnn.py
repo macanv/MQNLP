@@ -8,9 +8,7 @@ import time
 import datetime
 import os
 import pickle
-
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
-
+os.environ["CUDA_VISIBLE_DEVICES"] = "2";
 import sys
 sys.path.append("..")
 from src.classification.data_helper import batch_manager, load_data, batch_iter
@@ -77,7 +75,6 @@ def train_cnnrnn():
         session_conf = tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)
         session_conf.gpu_options.allow_growth = True
         sess = tf.Session(config=session_conf)
-
         with sess.as_default():
             cnn_rnn = CNNRNNsClassification(
                 embedding_mat=None,

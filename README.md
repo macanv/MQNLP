@@ -43,4 +43,10 @@ http://blog.csdn.net/macanv/article/details/78964020
 #### 6. 文章摘要
 > 正在准备实现基于seq2seq的，苦于没有训练语料
 
+#### 7. GAN学习
+> 1. 原始GAN (GAN.py)
+
+> 2. Conditional GAN (cGAN.py)
+
+> 3. 
 #### 7. 主题模型(不要face的写上吧)
